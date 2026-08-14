@@ -1,0 +1,3717 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RX·CW — Entraîneur Morse</title>
+<style>
+:root{
+  --bg: #0a0d0b;
+  --bg-panel: #11160f;
+  --bg-raised: #161d14;
+  --line: #283022;
+  --line-bright: #3a4632;
+  --phosphor: #5effb0;
+  --phosphor-dim: #2f9967;
+  --amber: #ff9f40;
+  --amber-dim: #b06a26;
+  --text: #e8f0ea;
+  --text-dim: #8a9a8c;
+  --text-faint: #566054;
+  --red: #ff5d5d;
+  --font-display: 'Oswald', 'Arial Narrow', Impact, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', 'Consolas', 'Roboto Mono', monospace;
+  --font-body: 'Inter', -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+
+html,body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--font-body);
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+
+body{
+  background-image:
+    radial-gradient(ellipse 1200px 800px at 50% -10%, rgba(95,255,176,0.06), transparent 60%),
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 1px, transparent 1px, transparent 3px);
+}
+
+::selection{background:var(--phosphor-dim);color:#03140a;}
+
+button{font-family:inherit;cursor:pointer;}
+button:focus-visible, [tabindex]:focus-visible, input:focus-visible, select:focus-visible{
+  outline:2px solid var(--phosphor);
+  outline-offset:2px;
+}
+
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:0.01ms !important; transition-duration:0.01ms !important;}
+}
+
+.wrap{
+  max-width:1180px;
+  margin:0 auto;
+  padding:28px 20px 80px;
+}
+
+/* ---------- HEADER ---------- */
+.hdr{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:24px;
+  padding-bottom:22px;
+  margin-bottom:26px;
+  border-bottom:1px solid var(--line);
+  flex-wrap:wrap;
+}
+.hdr-mark{
+  display:flex;
+  align-items:center;
+  gap:14px;
+}
+.hdr-mark .led{
+  width:10px;height:10px;border-radius:50%;
+  background:var(--phosphor-dim);
+  box-shadow:0 0 0 0 rgba(95,255,176,0.5);
+  flex-shrink:0;
+}
+.hdr-mark .led.live{
+  background:var(--phosphor);
+  animation:pulse 1.6s ease-in-out infinite;
+}
+@keyframes pulse{
+  0%,100%{box-shadow:0 0 0 0 rgba(95,255,176,0.45);}
+  50%{box-shadow:0 0 10px 4px rgba(95,255,176,0.25);}
+}
+.hdr h1{
+  font-family:var(--font-display);
+  font-weight:700;
+  font-size:30px;
+  letter-spacing:0.5px;
+  line-height:1;
+}
+.hdr h1 .dot{color:var(--phosphor);}
+.hdr .tagline{
+  font-family:var(--font-mono);
+  font-size:11.5px;
+  color:var(--text-faint);
+  letter-spacing:1.5px;
+  text-transform:uppercase;
+  margin-top:6px;
+}
+.callsign-badge{
+  font-family:var(--font-mono);
+  font-size:13px;
+  color:var(--text-dim);
+  background:var(--bg-panel);
+  border:1px solid var(--line);
+  padding:8px 14px;
+  border-radius:3px;
+  letter-spacing:0.5px;
+}
+.callsign-badge b{color:var(--amber); font-weight:500;}
+
+/* ---------- RX/TX SWITCH ---------- */
+.rxtx-switch{
+  display:flex;
+  gap:3px;
+  background:var(--bg-panel);
+  border:1px solid var(--line);
+  border-radius:6px;
+  padding:5px;
+  margin-bottom:28px;
+  position:relative;
+}
+.rxtx-btn{
+  flex:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:14px;
+  background:transparent;
+  border:none;
+  color:var(--text-faint);
+  padding:18px 20px;
+  border-radius:4px;
+  transition:background .2s, color .2s, box-shadow .2s;
+  font-family:var(--font-display);
+  position:relative;
+}
+.rxtx-btn .rxtx-ic{
+  font-size:20px;
+  opacity:0.55;
+  transition:opacity .2s, transform .2s;
+}
+.rxtx-btn .rxtx-lbl{
+  text-align:left;
+  font-size:16px;
+  font-weight:700;
+  letter-spacing:0.8px;
+}
+.rxtx-btn .rxtx-lbl small{
+  display:block;
+  font-family:var(--font-mono);
+  font-size:10.5px;
+  font-weight:400;
+  letter-spacing:0.3px;
+  color:var(--text-faint);
+  text-transform:none;
+  margin-top:3px;
+}
+.rxtx-btn:hover{color:var(--text-dim);}
+.rxtx-btn:hover .rxtx-ic{opacity:0.8;}
+.rxtx-btn.active{
+  background:linear-gradient(180deg, var(--bg-raised), var(--bg-panel));
+  box-shadow:inset 0 0 0 1px var(--line-bright), 0 0 24px -8px rgba(95,255,176,0.25);
+  color:var(--phosphor);
+}
+.rxtx-btn.active .rxtx-ic{opacity:1; transform:scale(1.08);}
+.rxtx-btn.active .rxtx-lbl small{color:var(--phosphor-dim);}
+.rxtx-btn[data-rxtx="tx"].active{
+  color:var(--amber);
+  box-shadow:inset 0 0 0 1px var(--line-bright), 0 0 24px -8px rgba(255,159,64,0.3);
+}
+.rxtx-btn[data-rxtx="tx"].active .rxtx-lbl small{color:var(--amber-dim);}
+
+#txColumn{display:none;}
+.tx-col{display:flex; flex-direction:column; gap:18px;}
+body.tx-active #rxColumn{display:none;}
+body.tx-active #txColumn{display:flex;}
+
+/* ---------- PADDLE ---------- */
+.paddle-pad{
+  display:flex;
+  gap:14px;
+  margin-top:24px;
+  justify-content:center;
+}
+.paddle-key{
+  flex:1;
+  max-width:200px;
+  height:108px;
+  background:var(--bg-raised);
+  border:1px solid var(--line-bright);
+  border-radius:6px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  color:var(--text-dim);
+  transition:background .08s, border-color .08s, transform .05s;
+  user-select:none;
+  -webkit-user-select:none;
+  touch-action:none;
+}
+.paddle-key .pk-label{
+  font-family:var(--font-mono);
+  font-size:11px;
+  letter-spacing:2px;
+}
+.paddle-key .pk-sym{
+  font-size:34px;
+  line-height:1;
+  font-weight:700;
+}
+.paddle-key.dit.pressed{
+  background:rgba(95,255,176,0.14);
+  border-color:var(--phosphor);
+  color:var(--phosphor);
+  transform:scale(0.97);
+  box-shadow:0 0 18px rgba(95,255,176,0.25) inset;
+}
+.paddle-key.dah.pressed{
+  background:rgba(255,159,64,0.14);
+  border-color:var(--amber);
+  color:var(--amber);
+  transform:scale(0.97);
+  box-shadow:0 0 18px rgba(255,159,64,0.25) inset;
+}
+
+.decoded-row{
+  margin-top:22px;
+  text-align:center;
+}
+.decoded-label{
+  font-family:var(--font-mono);
+  font-size:10.5px;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  color:var(--text-faint);
+  margin-bottom:8px;
+}
+.decoded-text{
+  font-family:var(--font-mono);
+  font-size:26px;
+  letter-spacing:4px;
+  color:var(--phosphor);
+  min-height:34px;
+  word-break:break-word;
+  text-shadow:0 0 12px rgba(95,255,176,0.3);
+}
+
+.key-capture-btn{
+  font-family:var(--font-mono);
+  font-size:13px;
+  background:var(--bg);
+  border:1px solid var(--line-bright);
+  color:var(--amber);
+  padding:7px 16px;
+  border-radius:3px;
+  min-width:52px;
+}
+.key-capture-btn.listening{
+  border-color:var(--phosphor);
+  color:var(--phosphor);
+  animation:pulse-border 1s infinite;
+}
+@keyframes pulse-border{
+  0%,100%{box-shadow:0 0 0 0 rgba(95,255,176,0.4);}
+  50%{box-shadow:0 0 0 4px rgba(95,255,176,0.12);}
+}
+
+/* ---------- BRIDGE STATUS ---------- */
+.bridge-status{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  background:var(--bg);
+  border:1px solid var(--line-bright);
+  border-radius:4px;
+  padding:12px 14px;
+  font-family:var(--font-mono);
+  font-size:12.5px;
+}
+.bridge-dot{
+  width:9px;height:9px;
+  border-radius:50%;
+  background:var(--text-faint);
+  flex-shrink:0;
+}
+.bridge-dot.connecting{
+  background:var(--amber);
+  animation:pulse 1s ease-in-out infinite;
+}
+.bridge-dot.connected{
+  background:var(--phosphor);
+  box-shadow:0 0 8px rgba(95,255,176,0.5);
+}
+.bridge-dot.error{
+  background:var(--red);
+}
+.bridge-hint{
+  margin-top:10px;
+  font-size:11.5px;
+  line-height:1.5;
+  color:var(--text-faint);
+}
+.bridge-hint code{
+  background:var(--bg-raised);
+  border:1px solid var(--line);
+  border-radius:3px;
+  padding:1px 5px;
+  color:var(--amber-dim);
+  font-family:var(--font-mono);
+}
+/* ---------- LAYOUT ---------- */
+.grid{
+  display:grid;
+  grid-template-columns: 1fr 320px;
+  gap:22px;
+}
+@media (max-width:900px){
+  .grid{grid-template-columns:1fr;}
+}
+
+.panel{
+  background:var(--bg-panel);
+  border:1px solid var(--line);
+  border-radius:4px;
+  position:relative;
+}
+.panel::before{
+  content:"";
+  position:absolute;
+  top:0;left:14px;right:14px;
+  height:1px;
+  background:linear-gradient(90deg, transparent, var(--line-bright), transparent);
+}
+.panel-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:14px 18px;
+  border-bottom:1px solid var(--line);
+}
+.panel-head .eyebrow{
+  font-family:var(--font-mono);
+  font-size:10.5px;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  color:var(--text-faint);
+}
+.panel-body{padding:20px;}
+
+/* ---------- SCOPE (signature element) ---------- */
+.scope-wrap{
+  padding:18px;
+  position:relative;
+}
+.scope{
+  width:100%;
+  height:180px;
+  display:block;
+  background:
+    radial-gradient(ellipse 100% 100% at 50% 50%, rgba(95,255,176,0.03), transparent 70%),
+    linear-gradient(180deg, #060a06 0%, #0c1209 100%);
+  border:1px solid var(--line-bright);
+  border-radius:3px;
+  box-shadow:inset 0 0 30px 8px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(95,255,176,0.04);
+}
+.scope-readout{
+  display:flex;
+  justify-content:space-between;
+  align-items:baseline;
+  margin-top:12px;
+  font-family:var(--font-mono);
+  font-size:11px;
+  color:var(--text-faint);
+  letter-spacing:0.5px;
+}
+.scope-readout .copy-target{
+  font-size:22px;
+  color:var(--phosphor);
+  letter-spacing:4px;
+  font-weight:500;
+  min-height:28px;
+  text-shadow:0 0 14px rgba(95,255,176,0.35);
+}
+
+/* ---------- MODE TABS ---------- */
+.modes{
+  display:flex;
+  gap:2px;
+  background:var(--bg);
+  border:1px solid var(--line);
+  border-radius:4px;
+  padding:3px;
+  overflow-x:auto;
+}
+.mode-btn{
+  flex:1;
+  background:transparent;
+  border:none;
+  color:var(--text-dim);
+  font-family:var(--font-mono);
+  font-size:11.5px;
+  letter-spacing:0.8px;
+  text-transform:uppercase;
+  padding:10px 8px;
+  border-radius:3px;
+  transition:background .15s, color .15s;
+  white-space:nowrap;
+}
+.mode-btn:hover{color:var(--text);}
+.mode-btn.active{
+  background:var(--bg-raised);
+  color:var(--phosphor);
+  box-shadow:inset 0 0 0 1px var(--line-bright);
+}
+
+/* ---------- PLAYER ---------- */
+.player{
+  padding:26px 20px;
+  text-align:center;
+}
+.tx-display{
+  font-family:var(--font-mono);
+  font-size:42px;
+  letter-spacing:10px;
+  color:var(--text-faint);
+  min-height:56px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  word-break:break-word;
+  line-height:1.3;
+  transition:color .2s, font-size .15s, letter-spacing .15s;
+}
+.tx-display.long-text{
+  font-size:19px;
+  letter-spacing:0.5px;
+  font-weight:500;
+}
+.tx-display.mid-text{
+  font-size:28px;
+  letter-spacing:3px;
+}
+.tx-display.revealed{color:var(--amber);}
+.tx-sub{
+  font-family:var(--font-mono);
+  font-size:12px;
+  color:var(--text-faint);
+  margin-top:6px;
+  min-height:16px;
+  letter-spacing:0.5px;
+}
+
+.controls-row{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  margin-top:24px;
+  flex-wrap:wrap;
+}
+.btn{
+  font-family:var(--font-mono);
+  font-size:11.5px;
+  letter-spacing:1px;
+  text-transform:uppercase;
+  background:var(--bg-raised);
+  border:1px solid var(--line-bright);
+  color:var(--text-dim);
+  padding:11px 18px;
+  border-radius:3px;
+  transition:border-color .15s, color .15s, transform .08s, background .15s;
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+}
+.btn:hover{border-color:var(--phosphor-dim); color:var(--phosphor); background:var(--bg-panel);}
+.btn:active{transform:scale(0.97);}
+.btn-primary{
+  background:var(--phosphor);
+  color:#03130b;
+  border-color:var(--phosphor);
+  font-weight:700;
+  font-size:13.5px;
+  padding:15px 30px;
+  letter-spacing:1.5px;
+  box-shadow:0 0 0 0 rgba(95,255,176,0.4);
+}
+.btn-primary:hover{background:#7fffc4; color:#03130b; box-shadow:0 0 22px rgba(95,255,176,0.4);}
+.btn:disabled{opacity:0.35; cursor:not-allowed; transform:none;}
+.btn .ic{font-size:13px;line-height:1;}
+.btn-primary .ic{font-size:15px;}
+
+.input-row{
+  margin-top:20px;
+  display:flex;
+  justify-content:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.input-row input[type=text]{
+  background:var(--bg);
+  border:1px solid var(--line-bright);
+  color:var(--phosphor);
+  font-family:var(--font-mono);
+  font-size:17px;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  padding:11px 16px;
+  border-radius:3px;
+  width:100%;
+  max-width:340px;
+  text-align:center;
+}
+.input-row input[type=text]::placeholder{color:var(--text-faint); letter-spacing:0.5px; font-size:14px; text-transform:none;}
+.input-row input[type=text].correct{border-color:var(--phosphor); box-shadow:0 0 0 1px var(--phosphor) inset;}
+.input-row input[type=text].wrong{border-color:var(--red); box-shadow:0 0 0 1px var(--red) inset;}
+
+.feedback-line{
+  margin-top:14px;
+  font-family:var(--font-mono);
+  font-size:12px;
+  letter-spacing:0.5px;
+  min-height:18px;
+}
+.feedback-line.ok{color:var(--phosphor);}
+.feedback-line.bad{color:var(--red);}
+
+/* ---------- SETTINGS PANEL ---------- */
+.field{
+  margin-bottom:18px;
+}
+.field:last-child{margin-bottom:0;}
+.field-label{
+  display:flex;
+  justify-content:space-between;
+  align-items:baseline;
+  font-family:var(--font-mono);
+  font-size:11px;
+  letter-spacing:1px;
+  text-transform:uppercase;
+  color:var(--text-dim);
+  margin-bottom:8px;
+}
+.field-label .val{color:var(--amber); font-weight:500;}
+
+input[type=range]{
+  -webkit-appearance:none;
+  width:100%;
+  height:4px;
+  background:var(--line-bright);
+  border-radius:2px;
+  outline:none;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;
+  width:16px;height:16px;
+  border-radius:50%;
+  background:var(--phosphor);
+  cursor:pointer;
+  box-shadow:0 0 8px rgba(95,255,176,0.5);
+  border:none;
+}
+input[type=range]::-moz-range-thumb{
+  width:16px;height:16px;
+  border-radius:50%;
+  background:var(--phosphor);
+  cursor:pointer;
+  border:none;
+  box-shadow:0 0 8px rgba(95,255,176,0.5);
+}
+
+.seg{
+  display:flex;
+  gap:2px;
+  background:var(--bg);
+  border:1px solid var(--line);
+  border-radius:3px;
+  padding:2px;
+}
+.seg button{
+  flex:1;
+  background:transparent;
+  border:none;
+  color:var(--text-dim);
+  font-family:var(--font-mono);
+  font-size:11px;
+  padding:7px 4px;
+  border-radius:2px;
+}
+.seg button.active{background:var(--bg-raised); color:var(--amber);}
+
+.field-grid-2{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+  margin-bottom:18px;
+  align-items:stretch;
+}
+.field-grid-2 .field{margin-bottom:0; display:flex; flex-direction:column;}
+.seg-vert{flex-direction:column; flex:1;}
+.seg-vert button{padding:10px 8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:center; flex:1;}
+@media (max-width:520px){
+  .field-grid-2{grid-template-columns:1fr;}
+}
+
+.toggle-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:10px 0;
+  border-bottom:1px solid var(--line);
+}
+.toggle-row:last-child{border-bottom:none;}
+.toggle-row span{font-size:13px; color:var(--text);}
+.toggle-row .hint{display:block; font-size:11px; color:var(--text-faint); margin-top:2px;}
+
+.switch{
+  position:relative;
+  width:40px;height:22px;
+  flex-shrink:0;
+}
+.switch input{display:none;}
+.switch .track{
+  position:absolute; inset:0;
+  background:var(--line-bright);
+  border-radius:11px;
+  transition:background .15s;
+}
+.switch .track::before{
+  content:"";
+  position:absolute;
+  top:2px;left:2px;
+  width:18px;height:18px;
+  border-radius:50%;
+  background:var(--text-dim);
+  transition:transform .15s, background .15s;
+}
+.switch input:checked + .track{background:var(--phosphor-dim);}
+.switch input:checked + .track::before{transform:translateX(18px); background:var(--phosphor);}
+
+/* ---------- STATS ---------- */
+.stat-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+}
+.stat-grid-wide{
+  grid-template-columns:repeat(4, 1fr);
+}
+@media (max-width:640px){
+  .stat-grid-wide{grid-template-columns:1fr 1fr;}
+}
+.stat-box{
+  background:var(--bg);
+  border:1px solid var(--line);
+  border-radius:3px;
+  padding:14px;
+}
+.stat-box .num{
+  font-family:var(--font-display);
+  font-size:26px;
+  font-weight:600;
+  color:var(--phosphor);
+  line-height:1;
+}
+.stat-box .lbl{
+  font-family:var(--font-mono);
+  font-size:10px;
+  letter-spacing:1px;
+  text-transform:uppercase;
+  color:var(--text-faint);
+  margin-top:6px;
+}
+.stat-box.amber .num{color:var(--amber);}
+
+.log-list{
+  margin-top:14px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  max-height:160px;
+  overflow-y:auto;
+}
+.log-row{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  font-family:var(--font-mono);
+  font-size:12px;
+  padding:6px 8px;
+  border-radius:2px;
+  background:var(--bg);
+}
+.log-row .a{color:var(--text-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; min-width:0;}
+.log-row .b{flex-shrink:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:45%;}
+.log-row.ok .a{color:var(--phosphor);}
+.log-row.bad .a{color:var(--red);}
+
+/* ---------- ALPHABET REFERENCE ---------- */
+.alpha-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(74px,1fr));
+  gap:8px;
+}
+.alpha-cell{
+  background:var(--bg);
+  border:1px solid var(--line);
+  border-radius:3px;
+  padding:10px 6px;
+  text-align:center;
+  transition:border-color .15s;
+}
+.alpha-cell.flash{border-color:var(--phosphor); background:rgba(95,255,176,0.06);}
+.alpha-cell .ch{
+  font-family:var(--font-mono);
+  font-size:15px;
+  font-weight:700;
+  color:var(--text);
+}
+.alpha-cell .code{
+  font-family:var(--font-mono);
+  font-size:13px;
+  letter-spacing:2px;
+  color:var(--amber-dim);
+  margin-top:4px;
+}
+
+footer{
+  margin-top:40px;
+  padding-top:18px;
+  border-top:1px solid var(--line);
+  font-family:var(--font-mono);
+  font-size:11px;
+  color:var(--text-faint);
+  display:flex;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:8px;
+}
+footer a{color:var(--text-dim);}
+
+.section-title{
+  font-family:var(--font-display);
+  font-size:15px;
+  font-weight:600;
+  letter-spacing:0.4px;
+}
+
+.kbd-hint{
+  font-family:var(--font-mono);
+  font-size:11px;
+  color:var(--text-faint);
+  text-align:center;
+  margin-top:16px;
+}
+.kbd-hint kbd{
+  background:var(--bg-raised);
+  border:1px solid var(--line-bright);
+  border-radius:3px;
+  padding:1px 6px;
+  color:var(--text-dim);
+  font-family:var(--font-mono);
+}
+
+.repeat-counter{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  font-family:var(--font-mono);
+  font-size:11px;
+  letter-spacing:0.5px;
+  color:var(--text-faint);
+  margin-top:10px;
+}
+.repeat-counter .rc-val{
+  color:var(--amber);
+  font-weight:600;
+  min-width:12px;
+  text-align:center;
+}
+.repeat-counter.rc-active .rc-val{
+  color:var(--phosphor);
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hdr">
+    <div>
+      <div class="hdr-mark">
+        <span class="led" id="liveLed"></span>
+        <h1>RX<span class="dot">·</span>CW</h1>
+      </div>
+      <div class="tagline">Entraîneur de copie morse — basé sur RobotCW</div>
+    </div>
+    <div class="callsign-badge">OPÉRATEUR <b id="mycallDisplay">F4GOP</b></div>
+  </header>
+
+  <div class="rxtx-switch" id="rxtxSwitch">
+    <button class="rxtx-btn active" data-rxtx="rx">
+      <span class="rxtx-ic">▼</span>
+      <span class="rxtx-lbl">RÉCEPTION<small>Copier le morse entendu</small></span>
+    </button>
+    <button class="rxtx-btn" data-rxtx="tx">
+      <span class="rxtx-ic">▲</span>
+      <span class="rxtx-lbl">ÉMISSION<small>Manipuler en morse</small></span>
+    </button>
+  </div>
+
+  <div class="grid">
+    <!-- COLONNE PRINCIPALE -->
+    <div class="tx-col" id="rxColumn">
+
+      <!-- OSCILLOSCOPE -->
+      <div class="panel">
+        <div class="panel-head">
+          <span class="eyebrow">Oscilloscope</span>
+          <span class="eyebrow" id="freqReadout">700 Hz</span>
+        </div>
+        <div class="scope-wrap">
+          <canvas class="scope" id="scope"></canvas>
+          <div class="scope-readout">
+            <span id="scopeStatus">EN ATTENTE</span>
+            <span id="scopeWpm">— WPM</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODES -->
+      <div class="panel">
+        <div class="panel-body" style="padding-bottom:0;">
+          <div class="modes" id="modeTabs">
+            <button class="mode-btn active" data-mode="calls">Indicatifs</button>
+            <button class="mode-btn" data-mode="mots">Mots FR</button>
+            <button class="mode-btn" data-mode="prefix">Préfixes</button>
+            <button class="mode-btn" data-mode="citations">Citations</button>
+            <button class="mode-btn" data-mode="groups">Groupes</button>
+            <button class="mode-btn" data-mode="groups_letters">Groupes lettres</button>
+            <button class="mode-btn" data-mode="groups_digits">Groupes chiffres</button>
+          </div>
+        </div>
+
+        <div class="player">
+          <div class="tx-display" id="txDisplay">PRÊT</div>
+          <div class="tx-sub" id="txSub">Choisissez un mode puis lancez la transmission</div>
+
+          <div class="input-row">
+            <input type="text" id="answerInput" placeholder="Votre copie…" autocomplete="off" spellcheck="false">
+          </div>
+          <div class="feedback-line" id="feedbackLine">&nbsp;</div>
+
+          <div class="controls-row">
+            <button class="btn btn-primary" id="playBtn"><span class="ic">▶</span> Transmettre</button>
+            <button class="btn" id="repeatBtn"><span class="ic">↻</span> Répéter</button>
+            <button class="btn" id="revealBtn"><span class="ic">👁</span> Révéler</button>
+            <button class="btn" id="skipBtn"><span class="ic">⏭</span> Suivant</button>
+          </div>
+          <div class="repeat-counter" id="repeatCounterRow">
+            <span>Réécoutes sur cette cible :</span><span class="rc-val" id="repeatCountRx">0</span>
+          </div>
+          <div class="kbd-hint">
+            <kbd>Entrée</kbd> valider · <kbd>Espace</kbd> rejouer · <kbd>Tab</kbd> révéler
+          </div>
+        </div>
+      </div>
+
+      <!-- ALPHABET DE REFERENCE -->
+      <div class="panel">
+        <div class="panel-head">
+          <span class="eyebrow">Table morse de référence</span>
+          <span class="eyebrow" id="toggleAlphaBtn" style="cursor:pointer;">Masquer ▾</span>
+        </div>
+        <div class="panel-body" id="alphaPanelBody">
+          <div class="alpha-grid" id="alphaGrid"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- COLONNE TX (manipulation) -->
+    <div class="tx-col" id="txColumn">
+
+      <!-- OSCILLOSCOPE TX -->
+      <div class="panel">
+        <div class="panel-head">
+          <span class="eyebrow">Oscilloscope — votre signal</span>
+          <span class="eyebrow" id="txFreqReadout">700 Hz</span>
+        </div>
+        <div class="scope-wrap">
+          <canvas class="scope" id="scopeTx"></canvas>
+          <div class="scope-readout">
+            <span id="scopeTxStatus">PADDLE AU REPOS</span>
+            <span id="scopeTxWpm">— WPM</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-body" style="padding-bottom:0;">
+          <div class="modes" id="txModeTabs">
+            <button class="mode-btn active" data-txmode="free">Manip libre</button>
+            <button class="mode-btn" data-txmode="calls">Indicatifs</button>
+            <button class="mode-btn" data-txmode="mots">Mots FR</button>
+            <button class="mode-btn" data-txmode="groups">Groupes</button>
+            <button class="mode-btn" data-txmode="groups_letters">Groupes lettres</button>
+            <button class="mode-btn" data-txmode="groups_digits">Groupes chiffres</button>
+            <button class="mode-btn" data-txmode="contest">Contest</button>
+            <button class="mode-btn" data-txmode="qso">QSO réaliste</button>
+            <button class="mode-btn" data-txmode="qso_fr">QSO français</button>
+          </div>
+        </div>
+
+        <div class="player">
+          <div class="tx-display" id="txTargetDisplay">MANIP LIBRE</div>
+          <div class="tx-sub" id="txTargetSub">Manipulez librement — tout ce que vous envoyez sera décodé ci-dessus</div>
+
+          <div class="paddle-pad" id="paddlePad">
+            <button class="paddle-key dit" id="ditKey" data-key="dit">
+              <span class="pk-label">DIT</span>
+              <span class="pk-sym">·</span>
+            </button>
+            <button class="paddle-key dah" id="dahKey" data-key="dah">
+              <span class="pk-label">DAH</span>
+              <span class="pk-sym">–</span>
+            </button>
+          </div>
+
+          <div class="decoded-row">
+            <div class="decoded-label">Décodé</div>
+            <div class="decoded-text" id="decodedText">&nbsp;</div>
+          </div>
+          <div class="feedback-line" id="txFeedbackLine">&nbsp;</div>
+
+          <div class="controls-row">
+            <button class="btn" id="txNewTargetBtn"><span class="ic">⏭</span> Nouvelle cible</button>
+            <button class="btn" id="txRevealBtn"><span class="ic">👁</span> Révéler</button>
+            <button class="btn" id="txRepeatBtn"><span class="ic">🔁</span> Répéter</button>
+            <button class="btn" id="txClearBtn"><span class="ic">✕</span> Effacer</button>
+            <button class="btn" id="txCheckBtn"><span class="ic">✓</span> Valider</button>
+          </div>
+          <div class="repeat-counter" id="repeatCounterRowTx">
+            <span>Réécoutes sur cet échange :</span><span class="rc-val" id="repeatCountTx">0</span>
+          </div>
+          <div class="kbd-hint">
+            <span id="kbdHintFull">Touche : <kbd id="kbdDitHint">A</kbd> ou <kbd id="kbdDahHint">É</kbd> — court = point, long = trait</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- REGLAGES KEYER -->
+      <div class="panel">
+        <div class="panel-head"><span class="eyebrow">Réglages du manipulateur</span></div>
+        <div class="panel-body">
+
+          <div class="field-grid-2">
+            <div class="field">
+              <div class="field-label"><span>Source du paddle</span></div>
+              <div class="seg seg-vert" id="paddleSourceSeg">
+                <button data-source="keyboard" class="active">Clavier / souris</button>
+                <button data-source="bridge">Winkeyer USB (pont)</button>
+              </div>
+            </div>
+
+            <div class="field">
+              <div class="field-label"><span>Mode de manipulation</span></div>
+              <div class="seg seg-vert" id="keyerModeSeg">
+                <button data-keyermode="straight" class="active">Simple</button>
+                <button data-keyermode="iambic-a">Iambique A</button>
+                <button data-keyermode="iambic-b">Iambique B</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="field" id="bridgeStatusField" style="display:none;">
+            <div class="bridge-status" id="bridgeStatus">
+              <span class="bridge-dot" id="bridgeDot"></span>
+              <span id="bridgeStatusText">Connexion au pont…</span>
+            </div>
+            <div class="bridge-hint" id="bridgeHint">
+              Lance <code>winkeyer_bridge.py</code> sur ton PC, puis laisse cette fenêtre ouverte. La connexion se fait automatiquement sur <code>ws://localhost:8765</code>.
+            </div>
+            <button class="btn" id="bridgeRetryBtn" style="margin-top:10px; width:100%;">↻ Réessayer la connexion</button>
+          </div>
+
+          <div class="field">
+            <div class="field-label"><span>Vitesse de manipulation (au paddle)</span><span class="val" id="txWpmVal">18 WPM</span></div>
+            <input type="range" id="txWpmSlider" min="5" max="40" value="18" step="1">
+          </div>
+
+          <div class="field">
+            <div class="field-label"><span>Vitesse d'écoute (réponses du programme)</span><span class="val" id="txListenWpmVal">18 WPM</span></div>
+            <input type="range" id="txListenWpmSlider" min="5" max="40" value="18" step="1">
+          </div>
+
+          <div class="field">
+            <div class="field-label"><span>Tonalité de retour</span><span class="val" id="txFreqVal">700 Hz</span></div>
+            <input type="range" id="txFreqSlider" min="400" max="1000" value="700" step="10">
+          </div>
+
+          <div class="field">
+            <div class="field-label"><span>Espacement Farnsworth</span><span class="val" id="txFarnsVal">Désactivé</span></div>
+            <input type="range" id="txFarnsSlider" min="0" max="15" value="0" step="1">
+          </div>
+
+          <div class="field">
+            <div class="field-label"><span>Essais par session</span><span class="val" id="txSessionLenVal">10</span></div>
+            <input type="range" id="txSessionLenSlider" min="5" max="100" value="10" step="5">
+          </div>
+
+          <div class="field">
+            <div class="toggle-row">
+              <span>Touche DIT (point)</span>
+              <button class="key-capture-btn" id="captureDitBtn" data-target="dit">A</button>
+            </div>
+            <div class="toggle-row">
+              <span>Touche DAH (trait)</span>
+              <button class="key-capture-btn" id="captureDahBtn" data-target="dah">É</button>
+            </div>
+            <div class="toggle-row">
+              <span>Inverser les paddles
+                <span class="hint">Si votre manipulateur est monté à l'envers</span>
+              </span>
+              <label class="switch"><input type="checkbox" id="swapPaddleToggle"><span class="track"></span></label>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- STATS TX -->
+      <div class="panel">
+        <div class="panel-head">
+          <span class="eyebrow">Bilan d'émission</span>
+          <span class="eyebrow" id="resetTxStatsBtn" style="cursor:pointer;">Réinitialiser</span>
+        </div>
+        <div class="panel-body">
+          <div class="stat-grid stat-grid-wide">
+            <div class="stat-box">
+              <div class="num" id="txStatCorrect">0</div>
+              <div class="lbl">Envois exacts</div>
+            </div>
+            <div class="stat-box amber">
+              <div class="num" id="txStatAccuracy">—</div>
+              <div class="lbl">Précision</div>
+            </div>
+            <div class="stat-box">
+              <div class="num" id="txStatCpm">0</div>
+              <div class="lbl">Car./min réels</div>
+            </div>
+            <div class="stat-box amber">
+              <div class="num" id="txStatStreak">0</div>
+              <div class="lbl">Meilleure série</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- COLONNE LATERALE -->
+    <div style="display:flex; flex-direction:column; gap:18px;" id="sideColumn">
+
+      <!-- REGLAGES RX -->
+      <div class="panel">
+        <div class="panel-head"><span class="eyebrow">Réglages de la liaison</span></div>
+        <div class="panel-body">
+
+          <div class="field">
+            <div class="field-label"><span>Vitesse</span><span class="val" id="wpmVal">20 WPM</span></div>
+            <input type="range" id="wpmSlider" min="5" max="40" value="20" step="1">
+          </div>
+
+          <div class="field">
+            <div class="field-label"><span>Tonalité</span><span class="val" id="freqVal">700 Hz</span></div>
+            <input type="range" id="freqSlider" min="400" max="1000" value="700" step="10">
+          </div>
+
+          <div class="field">
+            <div class="field-label"><span>Longueur du groupe</span><span class="val" id="groupLenVal">5</span></div>
+            <input type="range" id="groupLenSlider" min="2" max="10" value="5" step="1">
+          </div>
+
+          <div class="field">
+            <div class="field-label"><span>Espacement Farnsworth</span><span class="val" id="farnsVal">Désactivé</span></div>
+            <input type="range" id="farnsSlider" min="0" max="15" value="0" step="1">
+          </div>
+
+          <div class="field">
+            <div class="toggle-row">
+              <span>Bruit de bande
+                <span class="hint">QRM léger derrière le signal</span>
+              </span>
+              <label class="switch"><input type="checkbox" id="noiseToggle"><span class="track"></span></label>
+            </div>
+            <div class="toggle-row">
+              <span>Affichage du texte
+                <span class="hint">Montre les lettres en transmettant</span>
+              </span>
+              <label class="switch"><input type="checkbox" id="echoToggle" checked><span class="track"></span></label>
+            </div>
+            <div class="toggle-row">
+              <span>Indicatif personnel
+                <span class="hint">Inséré en fin de session</span>
+              </span>
+            </div>
+            <input type="text" id="mycallInput" value="F4GOP" maxlength="10" style="width:100%; background:var(--bg); border:1px solid var(--line-bright); color:var(--amber); font-family:var(--font-mono); padding:8px 10px; border-radius:3px; letter-spacing:2px; text-transform:uppercase;">
+          </div>
+
+        </div>
+      </div>
+
+      <!-- STATISTIQUES -->
+      <div class="panel">
+        <div class="panel-head">
+          <span class="eyebrow">Journal de trafic</span>
+          <span class="eyebrow" id="resetStatsBtn" style="cursor:pointer;">Réinitialiser</span>
+        </div>
+        <div class="panel-body">
+          <div class="stat-grid">
+            <div class="stat-box">
+              <div class="num" id="statCorrect">0</div>
+              <div class="lbl">Copiés exacts</div>
+            </div>
+            <div class="stat-box amber">
+              <div class="num" id="statAccuracy">—</div>
+              <div class="lbl">Précision</div>
+            </div>
+            <div class="stat-box">
+              <div class="num" id="statStreak">0</div>
+              <div class="lbl">Série en cours</div>
+            </div>
+            <div class="stat-box amber">
+              <div class="num" id="statBest">0</div>
+              <div class="lbl">Meilleure série</div>
+            </div>
+          </div>
+          <div class="log-list" id="logList"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <footer>
+    <span>RX·CW — réécriture des données originales de RobotCW v2.1.1</span>
+    <span>Tout fonctionne hors-ligne dans votre navigateur, aucune donnée envoyée</span>
+  </footer>
+</div>
+
+<script>
+const CW_DATA = {"calls": ["DM1517L", "DJ2OQ/P", "HG17BF", "XE2OR", "F6RAC/P", "W8TY", "IW9GDC/B", "UR5NFW/A", "W8RES", "K3L", "WA8FGV", "KV4FZ", "UT3UGV", "HF90GOT", "SV1SIX/B", "EM120QV", "NP4AW", "YB8TDK", "5B4AMM", "R20UFA", "CO8LY", "HG6TWG", "UR7CT", "K2YN", "OF3FM", "2E0HLC", "FF4FEM", "ZL4AS", "PY2MR", "IZ2MHO/P", "RL5G/4", "OK1VBN", "VA3JTN", "II8IHBC", "SM5CUI", "VK6IR", "W4ALF", "R20RND", "OE8FIRE", "W0VB", "W3L", "M0SDV", "N1AKN/M", "EA3GLF", "II0IADC", "EM130QV", "CO8OH", "IU0FBK", "ZS4WW", "9M6CDX", "RN3YN", "2E0ZAI", "N5LNO", "4O7CC", "RL5G/8", "G4IJC", "AA8AB", "ES5TF/2", "W3UTD", "F8FSC", "JR1CFP", "DM5BB", "VE4DRK", "EA4RE", "XE2ST", "DV500SS", "AL7KC", "II0IABB", "SP9YFF/7", "SV3/SV1NN", "VR2ZXP", "ON6FY", "JA4TEG", "F4EUG/P", "DL/VK2IO/P", "EA2AQM", "K4KV", "ON8ON", "W1TR", "LU8EX", "C6AFP/B", "W5JK", "F1JG", "K2A", "SP3IQ", "OM2017WYAC", "R20VRN", "OL60SIENEL", "GB2CPM", "K3JJJ", "TA1PB", "R2RT/P", "K2GLM", "F5PVK/P", "EA9HU", "VK6LC", "I1ASU/P", "AD4DB", "WH6R", "JI1CLB", "HB9/DL1DUS/P", "EA/PH2CV/P", "JR1DQK", "EC7DTQ", "R0AEW", "N8OO", "PY5EW", "R7AB/P", "HK3W", "IQ3ZL", "SP2EUI", "DL/OK1CDJ/P", "PI4CC", "EA5DF", "YO3FRI", "EA5KV", "PY2NFT", "EA5KY", "SP7DCS", "UA1TAN/M", "F5MFI", "R2AGG/M", "4X5AQ", "IW2NHE/HB9", "SV1GYG", "JR1EMO", "ES1BA", "DJ2OS/P", "RZ5D/M", "IZ8FRH", "B7CRA", "UY5YA", "ON/PA3FYG/P", "W8IF/B", "R20KRK", "1Q2DP", "Z21NRT", "RA3AV/M", "EA2AQM/QRP", "TA1LRS", "DL8SCQ", "TZ4PR", "CN8AM", "OZ11A", "RC20CW", "HB9CVQ", "F5ZRB/B", "JT1BU", "F4FCE/P", "WR7NV/B", "TM77Y", "BI4SWR", "II9IADP", "OZ2PJ", "4L1MA", "VK4FO", "ZL2RX", "KV8S", "TM24DTF", "EA3NT", "N2GHR/B", "TY2AC", "W5YI", "WP4JCF", "DL8DZL/P", "LA7SIX", "ON4MFX/P", "SP5JCX/4", "IV3KAS", "N0LL", "ZS2Y", "KA0UNB", "SM3AFR", "RA3QH/P", "TA1BJ", "OM2017WYCA", "F4DYX", "K5BG", "OR7Z/P", "R20DOF", "7X3WPL", "TZ5XR", "9M4IOTA", "N4PALB", "IZ1ERR/B", "YB1UUU", "K4KNS/B", "LZ1AEY", "JH1EXH", "5R8UI", "IQ1ZS", "F/PC5Z", "YT9M", "K2M", "WZ8D/B", "K5CM", "YI3WHR", "RZ3DCJ", "N0NB", "JA4DND", "N7ZO", "S51MA", "WA0CED", "IU8FVA", "OE5XHE/B", "UA0ACG/M", "9M2CNC", "HG17FINA", "K7CA/B", "A41KB", "9A3VM", "UB5O/6", "W2LMM", "JA6FUV", "4O/IK3GES", "IQ5QO/P", "R20PFO", "IK8HVO", "EA3RP", "VA3WU", "IZ8GNR", "VB7150", "EA2AK/P", "4L/OK1DIG", "HG17OW", "N8HMG", "EA5GPC/M", "DU1/JH1FNS", "W4JSI", "K6CWB", "EA7RCK", "R20SAM", "EA4URP", "SP6RW", "EA6RF", "OM6DC", "DL3TN", "UR8GZ", "UX7QV", "EA5AJX", "YE3AA", "WD9BGA/B", "AB4B", "S55TZ", "RC20RZ", "YB3VO", "IW3INO", "JO3TAP", "YU4EMR", "ON8KW", "FP/KV1J", "SP6JQF/6", "9H1WE", "V85T", "GB6SMD", "K4LAL", "W0BV", "PY6RL", "IQ7TA", "PY4HGM", "E21YDP", "F6ABC", "F0FEK", "F4GNN", "JT5DX", "SP7PDL", "G3WDG", "W4USR", "K1DH", "S58WW", "SP5Z/P", "G0TSM", "OH6ME", "IZ8JAI", "OZ/ON7EG", "4L6QL", "IQ7FG", "G0PQO", "G0VQY", "IZ8XXE", "HB9DQM/P", "SY2BEX/P", "W5GPM/B", "UR5QW", "IF9/IF9ZZO", "UE80AR", "SP9CV", "K1HTV", "VE7AV", "A45TT", "LA6TPA", "IQ7DV", "JA9LSZ", "PB8DX", "R24RRC", "EA5ON", "IZ1NDZ", "SP3RNZ/P", "N1NOL", "DK0JKG", "DL6BS", "KF6A", "IZ0MQN", "EA9ACD", "ER1PB", "R100PK", "IT9TYR", "EA5URY", "RN6AM", "EB5JRL", "EA7AAW", "R1591M", "E6AG", "HL5FHR", "EA4URP/P", "LZ1DP", "EG5RCB", "DL9RNV/P", "K0TPP", "R7CD", "OJ0V", "DR5LUTHER", "EB1TR", "F1ZDU/B", "W2PE", "VK3TJK", "US5WE", "F5DUX", "WA3RGQ", "R7KR", "9A/S5BY/P", "UR9QQ", "YO4FYQ", "RG0A", "N9IW", "K3UHU", "UA9CK", "G3PXT", "EA5IIK", "DK1HL", "WY5I", "EA7AYF", "SP9YFF/P", "DL0IL/P", "RL5G/P", "W5VMA", "RA3R", "IQ7AF", "R9LY/4", "W3KRQ", "BD7BM", "DA0YL", "F6CZD", "EA2CNA", "F5BZB", "9A/S58Y", "RG50IV", "R13MAKS", "K5QE", "IT9ZZO", "SQ8N", "DL8MLD/P", "EO100UNR", "IQ6NE", "GM/DH5JBR/P", "N8OC", "OE3IDE", "ZS8Z", "LU2FE", "EA5HEH", "IZ5TQW", "UA4CTV", "HS0ZJF", "DK6KD", "N8HLH", "EA7MT", "DG6IMR/P", "RK0S", "RX6BN", "GB3MCB/S", "RL5G/6", "EA5URL", "GB7UJS", "DK0FN", "LZ1AG", "K3NXH", "SN0OSB", "DJ3AS", "SL1FRO", "A41NN", "4X1KP", "KA1O", "OK1VEI/P", "EA3KX", "II1IGGA", "9A8BEN", "W8LRO", "4X4SIX", "OK0ET/B", "HD8M", "UX2IQ", "2E0DZC", "LA7CFA", "TM150ST", "YD3IMS", "W1VNT", "UE00S", "DL0SOP", "M0KPD/M", "AI1K", "R20HAM", "EA7IZ", "W2LB", "PA3DZL", "GD4SKA", "F5PCV", "EA5YI", "EA1MX", "SM6A", "OH9SIX", "JA3RQ", "W7YAQ", "RZ3QM", "K2KA", "ED1ZAG/B", "OH7UE", "KM5AT/4", "UB50/M", "PY4NY", "WA7SCH", "KR8T", "OM3ZBG", "ON3YB/P", "W0IOH", "IU8ACL", "ER5LL", "ON6QRP", "HB9AFI/P", "F4GOP", "VK2SR", "AA2UK", "R100YP", "OE3XTR/B", "VR20ZLK", "IK2BBU", "DL2DX", "RV9CW", "EX8M", "VU2AI", "YB1BML", "W0AAT", "YU1GUV", "RA3Y", "9A3JH", "EI44WAW", "PA3GEG", "LU7HN", "DL9YFF/7", "KC4LE", "SQ5GA", "SQ7M/P", "EA7RCK/P", "SV1SIX", "TK4LS", "RU20CC", "SV1EKV", "W7MEM", "SP3PWL/3", "R1451M", "SV1EIW", "CT1GVN", "7X2KF", "RG50YR", "SP1GPI", "EB1ESK", "WB8LNG", "IU5ASA", "N8CGY", "F4GHB", "WB2UJS", "UT3GX", "YC1POI", "R20SPB", "EA5HR", "YT1T", "EA4ZK", "UW2QU", "OZ/DL3JJ", "N3WZU", "DH6LAS", "RC20AC", "9K2GS", "IW8RRF", "N9JLY", "AB0HF", "LZ5GM", "YT5M", "BG7EBO", "RW0LD", "F5VKV", "JE8KKX/8", "IN3FXP/6", "CX6DZ", "UA3EDQ", "F6CUG/P", "G3XGS", "PA3DBS", "W3HH/B", "PV8AL", "HG1BTV", "DK3EE", "LY1SR/P", "GM/DH5JBR", "AM725BJ", "N1CFB", "EA5UF", "RG50KS", "RL3QJ", "JI1DMH", "OF5XK", "F1AZJ", "E73DN", "EA1VM", "EA7GU", "F5ZZ", "KW7D", "IF9/IT9ZZO", "UT5UGR", "F6IFX/P", "IQ2VA", "EV500S", "N6BCT", "RA9YE", "EI4GZB", "E20NGF", "R110A/P", "S56P", "5B4AIX", "N5SD", "KM4UVF", "W2PKY", "SP5OXJ/P", "EA1EX", "K4PI", "4X1KS", "UA3URT", "FG1JS", "TM100LGG", "A61FK", "R110A", "W2IRT", "N2BJ", "F4GYG/P", "VK3ADT", "HF6TWG", "IQ9SZ", "SV9CVY", "R20RT", "IS0CTX", "EA5NY", "EA1EXE", "UR7TXQ", "SV2NCH", "RG50PZ", "I3EVK", "HG17BT", "JE2PUC", "4X1AJ", "SM2YIZ", "ED1ZAG", "ON3DVD", "HG1BVA/B", "EA8YV", "UA9CUA", "IZ4VYY", "SP3TLJ", "UA3DUJ", "7Z1AL", "MX0SNB", "IZ1MLC", "HG17VT", "EA1WX", "I1ASU", "UT4NA", "JA1UAV", "IQ3TS", "R20YFO", "EA3CE", "ZA/OG2M", "OK2ZO", "UF0A/P", "RZ6M/P", "UR5MKB", "NP4BM", "OG8WW", "VR20XMT", "W3PIE/B", "LB0OG/P", "F4HRI/P", "TM3CT", "EG5FPN", "SP2LQP/4", "EA7EU", "EA3AR", "JH9DRL", "R0CBG", "EA2PB", "KD2ELY", "FO/DF1YP", "N8PUM/B", "KF4PGW", "IU2DXF/P", "F1BHB", "GM0HCQ/MM", "GW3UZS", "3D2AG", "R0IAA", "JA3IWB", "ES/OD5LN", "YB0NDT", "EB5WC", "EA4APP", "IK0RMR", "EA8URL", "TM63ASM", "I6KYL/IN3", "JH1GEX", "EW1ZR/2", "F0FYP", "F5IF", "HB9ED", "HA6NM", "VA3MO", "IV3DBT", "HG17WP", "EA8CMY", "EA3BSE", "EA8BBJ", "EA5BWR", "EA3PP", "WB4ZWK", "K5ZG", "A75GT", "W3NZL", "F6BEG", "W1ZT", "UA4GDJ", "DO1DJJ/P", "KA4DOC", "EA2TW", "W3AAX", "EA3CA", "KK4X", "SQ9IAB/P", "W5KID", "NT4F/B", "A61FJ", "OK0EA/B", "IF9/IK1RGM", "G3VIR", "RV3YR", "G0MJS", "RK3Q/P", "EA7GV", "4O/ON5JE", "W3RJW", "PY2XB", "W5CMM", "M6RSB", "R2DLC/4/M", "W4FWW", "IQ0RU", "IP1DCI", "OF7MRU/M", "PE1IVR", "VU2NKS", "W0AJU", "ON0LLV-5", "VK9VKL", "W6QUV", "40METERS", "RG50SP", "ZA1EM", "K3DY", "EC7ABV", "JM3ROY", "KB3RHR", "WB9DEH", "SJ7SOP", "RY2A", "NM9P", "KH0TG", "IK6XEJ", "EA5EZ/P", "EA5RKX", "EW1ZA/1/A", "HF800PT", "PA50LELY", "W6UC", "WA7X/B", "DK3WG", "BV5OQ", "EA8BPX", "OH/RT1M", "EA1BPC", "PU5CBJ", "K9KK", "K7ULS", "RG7F", "K0GMO", "DO9UDO", "WA4GEH/B", "V21XN", "EA3HKA", "ES3RM", "WV4V", "ON5SWA/P", "K6EID", "9A2DS", "DB125PTB", "W7DHH", "R1512M", "JH1HGI", "JH7FMJ", "R280TLT", "EA4GHV", "IS0DCR", "ON8DM", "OK1KLL/P", "LZ0SJB/B", "TF3DX/P", "EA7HG", "VE3FGU", "SV2JAO/B", "RL5G/3", "F/PC5Z/P", "IZ8XJJ", "DL5RBW/P", "RU1ZC", "K9APW/B", "YB8ADX", "VP8NO", "ZS5DCF", "W4DQ", "W7UT", "M0HEM", "TA7X", "UR5R", "WB2TT", "OD5PY", "DK7TX", "NR5M", "R20SZO", "RL5G/0", "OZ2TF", "W4LES", "N1BUG", "JI1BDQ", "SP4SHW/P", "EA1XT", "AA5KA", "K2G", "VE7MTY/B", "TF3PPN", "F6GRX", "JA7CSS", "M5ZAP/P", "DL1DGS", "IV3GBO", "M2G", "M0YMA/P", "EA3FZT", "VK4TMZ", "LZ284SKD", "EA7EM", "F6IJT", "RC20UU", "EA1BCU", "WD4AB", "VE3LNU", "WB5LLI/B", "R100P", "KC3IYR", "9M6XRO", "OK2JNB", "DL6FBK/P", "R9LAF", "OH3TE", "VE7DAY", "SV1CIF", "IZ0MQN/P", "2E0EDF", "ZS6TVB", "CX4DI", "DL500ML", "OL100SV", "CS5BALG/B", "PA2CVD/P", "EA8AQV", "DL3JJ/P", "XE1B", "F4DXV", "DH5PA/M", "JA1LET", "YL2AG", "FG80J", "UN9GA", "UA0SFM", "ON3EA/P", "RC9MAA", "EC1KR", "KD7PY", "BG7BES", "GM8OEG/P", "DL/HA7UL/P", "JE1BMJ", "ES1ACS/2", "PY5KW", "DS3EXX", "RA3DBL", "IZ8QMF", "EA5SM", "OK1DIX", "KE1LV", "EA1URL/CVL", "DJ9BX/MM", "I3JYL", "IQ9QL", "LU5OM", "BG4DRL", "II3WW", "RI0C", "EA5PV", "V51WW", "EA5BK", "UR5LAK", "PU2MMP", "F5PVX/P", "UC7R", "JE1LET", "HG17DA", "UB3GDI", "UT4U", "F5ZAL/B", "KQ4ZH", "EA5DD", "ES2TT/2", "PD0PVR/P", "II0IHMW", "K1BUK", "EA1AST", "WY7HR", "EA5/DK5IM", "DL/PB2T/P", "YW450ARV", "SM6CWK", "VE4EAR", "OM2VR/P", "BD7SM", "KB6UNC", "K2C", "KW4OV", "HA2EOA", "W1ZE", "SV1NZX", "R9MJ/6/M", "ON7RT/7", "EA5URY/P", "KB7ME", "PR7YU", "RW4Z", "F1CKB", "DL2ASG", "NG4C", "SA7AKE", "LY17LP", "F5MQW/P", "WV4X", "IZ1FUM", "TM17BTB", "VA6SP", "VU3NXI", "OD5YA", "IU8DAV", "US0LW", "SP8NR", "VE3MMQ", "UR6IM", "GM6JNJ", "W3LL", "UX7IV", "IQ9SR", "UX0FF", "JH6VXP", "EA2CW/P", "OJ0VK", "EA4CWN", "EA5JPL", "K8DMR", "NC1WX", "JH7MQD", "TI2KWN", "SP9FKQ", "SV2HSZ/P", "EA5EY", "W3APL/B", "K7RWT", "SV2NCH/P", "SP9RTZ/4", "IW1RFH/P", "OF100FI/0", "KI6CG/7", "IR0UAO", "EC2AG/P", "HA9AL/QRV", "UT1EK", "IZ5ILJ", "RW9WJ/4", "RA3VMX/6", "SV8QG", "YD8CPZ", "IQ6TH", "EI3KD", "W8HW", "HA8FK", "RC20FM", "JH2GEX", "F/IU1AUG/P", "NO4J", "IQ2BJ", "CE7VPQ", "SV7CUD/QRP", "K1GND", "WG2Z/B", "IT9QAU", "F5MSB/P", "DL6UHA/P", "W8UCO", "EA8QP", "N9EM/B", "EA7QQ", "F1SHV/P", "VU3IIX", "HG17HA", "R7AB/M", "EC1AJL", "JF3DRI", "M0GRY", "II2IAOG", "WA9WCC", "LZ120RK", "R20TT", "ED1YCA/B", "YD9XYP", "SV2OXS/P", "KF2T", "W7ZAC", "KB3RAN", "YC9XYP", "EA7BUU", "DK4AN", "XE2K/B", "DA0UP", "EA7ESF", "EA5BY", "EA2/DL2DXA/P", "W3XS/KP2", "W6WRT", "ZL1ALA", "SV5DKL", "K9SLQ", "NC1I", "DL2RUF/P", "KO6KL", "IZ8IFL", "I0YLI", "W4ETN", "VE2XK", "DL8QS", "K6ZXR", "SV9/WB2GAI/P", "PY5QW", "W8M", "JH2DFJ", "IU1GNA", "K1YOW", "IZ8MXB", "UE80NSO", "DL6BBT", "CM3XN", "UT7KF", "SF3A", "R3LB", "XW4XR", "II8HBC", "M0DSL/MM", "VE6SV", "9Z4Y", "S59A", "WA7HJV/5", "IW1RFH", "UA6CE", "ED1YCA", "EA4SV", "W0ECS", "RN6CV", "KL7EDK", "R63VLZ", "N9FTC", "DR5E", "PD1AIC", "EA1URL", "JG2BRI", "OK/DL2DXA/P", "WA1RKS", "W4H", "TM47OAG", "YT5LD", "W4ZYT", "PY7AHA", "RW3QJA", "F5ELY", "R1MA", "KD5WY", "EA1EZZ", "EA1BPA", "WZ4L", "GM3POI", "F6EQZ", "EW3AN", "YV5LIX/B", "F4FAQ", "JA3QNI", "SP5IDK/4", "OK/DL2DXA", "NC2V", "T7/SP7VC", "EA1UT", "KK4CB", "IQ5DY/5", "EA5BM", "JA3EGE", "RN20CC", "JH1MDJ", "N5KI", "SP3QFV", "R44WFF", "DJ1DD", "W4IMD", "T77C", "F1AZJ/P", "CO2JD", "EA8JK", "RU4SO", "K1RGO", "HB9ELE", "KK4MA", "K5SE", "EA5GPC", "UT4EX", "AB1NS", "9A5O", "MM/ON4GS/P", "JG1TSG", "BG9NJY", "VE5DA", "K3WA", "W6GEE", "F5NIH", "UA2FR", "YO7LDT", "K1JT", "YO1000LEANY", "IK2SBB", "HF1997OP", "BG8TFN", "C08LY", "KF4INA", "EA1FE", "N8EHW", "S01WS", "OE6IWG", "9M4CME", "KP4EIT", "KP4GC", "ND4X", "YU5SD", "LX1JX", "WW8M/B", "JR4OZR", "I3MEK", "R20SPBY", "YA5O", "RZ6CN", "DK0MM", "N5PT", "SV2RUJ/P", "GB3NGI/B", "OZ7IGY", "UT7UJ", "R2017F", "SM6/DL1HTW", "K4P", "9A/S58Y/P", "R20PRM", "LA5WNA/P", "EA5WU", "EB5AG", "8S7A", "EA5GIE", "EG8ESJ", "JF3NKA", "EA5GX", "IK8DYF", "W4CBX/B", "EA3RP/P", "N7DGI/B", "RZ4PXO", "4L5P", "SP2YMX", "7V5J", "MW3FLI", "IT9FZX", "JH7WER", "EA5IQR", "EA7AZA", "W4BCX", "YU/9A1AA/P", "ZL4TT", "RA3RX/P", "RC20MX", "AB1CD", "KP4KD", "NX8G", "9H1TX", "R44QFF", "NS1TA", "AB4WL", "9J2BO", "IZ1CLA", "JT1AA", "EI/EA6SX", "K5WBM", "EA5BK/P", "RW9JV", "YL3BF/P", "RG6G", "F5ZSF/B", "EA4XT", "F4AEL", "YG7SPN", "AE0DM", "KR7RK", "W6DCC", "SV9/M0NPT", "OH6JJ", "UT1IF", "TM06YFC", "PA7ZZ", "HA8WZ/P", "F5FL", "F1ZBC/B", "KD4ESV", "N0SAP/B", "RW9QA/M", "N8WNA", "BD7DM", "JA7RAK", "LA2K", "SV8/DK2SJ", "F1MPE", "N4ASF", "IQ0RU/4", "OP70BFS", "W4FWS/B", "KE6MT", "EF8DA", "R20DFO", "KM4WSJ", "W3CP", "AA1K", "VA2ZFN/B", "HG17WWW", "HG117BF", "UA7KA", "SN0PAZ", "W0PV", "LU7YS", "F5HVI", "WC4H", "GU8FBO", "N0LL/B", "EA6URA", "SM7GVF", "UA3RA", "K0KP", "VU2XO", "K0RJV", "OF2DG", "VE9CB", "AA0MZ", "HS7WMU", "F1BFC", "SZ2RCK", "IZ7KGB", "W4EM", "I1KFH", "JH4IUO", "PH1DLB/M", "EA5IHK", "ZD7BG", "K4AVO", "F5SIH", "R17NZL", "EI33WAW", "LB3AH", "DA0COTA", "N8JX", "DM2EHE", "SV2RUJ", "EA5IIB", "DR25MDK", "DK1FG", "OF2BBM", "4U1ITU", "WB9TFH", "CM2XN", "RZ5D/6/M", "DK8MZ", "OK1MLP/P", "RA3WHB", "ON4UP/P", "IZ5WSR", "IK7YCE", "RX9JC/M", "NQ5X", "R3FO", "WA4OSS", "JA2EID", "VU2VID", "UD7A", "R100GK", "EA4HV", "VU2IIX", "DL6ZFG", "R1WBB", "II2XC", "EW8O", "EW2W", "R2AKN", "OH2UHF", "OZ4BHM/S", "F5EAN", "EA4ADJ", "IT9DOR", "IQ2DP", "K4EJQ", "UR7UZ", "EH7DA", "SV3BSF/B", "VE4VHF/B", "YL2GD", "RA3VOX/6", "TM650CCAE", "N4AW", "RX15RX", "IK6BSN", "JF7LGH", "N0NHW", "TK4QL", "EA8AQ", "F5ZHX/B", "W4NI", "DL5RBW", "HA1XY", "OH2NOS/P", "KF8QL/B", "R24RCC", "SM7D", "UY5QZ", "LZ105PBP", "W4AS", "IQ4FE/4", "W5IM", "N6TU", "F4BPE", "OH8WR", "EA9UV", "EA5FX", "IQ2LZ", "DD2CW/P", "UB8CHW", "HA5AGS", "W7I", "I1/R1AR", "LZ45YE", "HF0ROSA", "IQ5DY/P", "V6J", "W3DOG/B", "8J60JARE", "HB9MXY", "TM9MC", "NA9RB", "R20UFO", "RC20TT", "EA6DB", "SP7WLU/P", "R20PFH", "I4TTZ/5", "EA2EZ/P", "UA9TO", "EA3NO", "SV8/DK3SJ", "SP8BJU/5", "G0OKD", "EA6/EA5DCL", "IT9ECY", "K6ME", "SV2FPI", "R1CZ", "GB3OHM", "AI6XN", "K6FV/B", "9B2JO", "OF6SRAL", "WU2X", "N7DED", "I1EIS", "K4KCL", "TK/F1MZQ", "HL1ZIX", "SP2SV", "9A3OS", "8J3A", "R1521M", "DL2KUH/B7", "NA2NY", "KB3RAN/SOTA", "SV8/GM0LVI", "EA6ZS", "A61HA", "R6AP", "RM7F", "R20NSK", "UX8IX", "SV1NJA", "R20CFO", "TM24TDF", "TR0A", "W1NVT", "EH3MCEE", "EA5YU", "IK4ADE", "N4WW", "R3VA", "JA9SSB", "ZB2ER", "R0CBI", "WA5SLO/B", "K5TLL/B", "TX5EG", "JO1LVZ", "R4AC", "JA1LNZ", "KK4BMV", "RU0SC", "EB7KA", "A61SM", "A71AE", "VK2NSS", "F2MM", "W8EMI", "OH8WW", "K2QL", "EC7AT", "VE3EK", "SU1SK", "F4GFS", "KL7GLK", "M0ORH", "EA5IFF/P", "LZ1ZP", "IW6ATQ", "SN0NONE", "NP4G", "MJ/JA0JHQ", "EA8TG", "VK5PO", "YO5AVN", "5B4AIX/P", "4UI1TU", "F4GDO", "JJ0PTY", "HG17DV", "K0KC", "IQ1QQ/8", "PA3EPA/M", "IZ0OTL", "F6APE", "JJ2LPV", "SM0RGG", "JA1KXQ", "II5IACF", "4X4SIX/B", "OK1DOZ", "PD0RWL/P", "F4CYH", "IZ1UIA", "FG8OJ", "TA3AIK", "CT2HOV/P", "VK2WP", "W5WM", "UN8PA", "K8OM", "BX2AC", "K5VWW", "VU2AU", "KP4", "EA4GOY", "IW2NIS", "R9DV", "9A2DI", "W0KIZ/B", "SM6NOC", "SA7CMZ", "DJ6TF", "IQ4FE/P", "HL4ZDA", "UB5O/M", "SV1VJ", "WB0RMO/B", "IQ2PV", "R20RCC", "AA7UN", "K0IBM/B", "WD9BGA", "F4CUI", "WB2YDS", "R20MSK", "DK5AI", "EA1ZR", "AA5AU", "DU1KA", "K5AB/B", "EA3CV", "YB3FTD", "OE6VCG", "DL0ABW", "EA7CD", "5B4CY/B", "EC2AG", "N4PZ/B", "IQ8UN/8", "EA1GT", "M0KPD", "CS5BLA/B", "WB7PMP/B", "SV1LHZ", "N4RT/B", "EA5DZ", "US0GB", "UA3GDJ", "VE2HKW/W2", "KS4S", "JO1WXO", "WA4DDH", "EA5BB", "OK1XZ/P", "LZ2WO", "RK20CC", "F5NXB", "EA3KU", "DK7UY", "KA9OMY", "UA9OGF", "SQ5GLB/8", "W0FY/B", "EA5HRV", "RA4HEI", "PY2SBY", "NF8M/B", "SV6DBG/B", "DL0DOK", "AM625VQ", "RA6ADQ", "JR1UFN", "WA0CSL", "OK1FLK", "F1PNJ", "W9MRH", "IT9SSI", "PY7RL", "TM6CR", "SM5DYC", "BG4GOV", "ES4OJ", "KD4AOZ/B", "OH0/RX3AMI/M", "IT9CKA", "VE7FG/B", "UW8SM", "AC0RA", "K5YG", "JH0RNN", "AI4WL", "RD9D", "YB3FUA", "A31MM", "SP5UUD/P", "WB7POP/B", "G3XJS/QRP", "SM0OWX", "F2WG", "LX1NO", "N0AIE", "RA1AO", "EU8F", "SP7THR", "K2K", "IZ1FUM/P", "F5MCC/P", "N5WS", "EA6VQ", "N4EX/P", "N2MM", "R20OFO", "OH1LWZ/M", "SV3GLL", "EA1AYN/QRP", "TR8CA", "OE3PKB", "PA0HIP", "R9AAL", "YO2LLZ", "IK1UWL", "RK3DSW", "DL8NDG/P", "R17MEX", "EA3GJO", "EA5XA", "DK2CX/P", "EA5TT", "R6FF", "UA0WW/M", "WB2TQE", "CN2XN", "DB3RH", "GB2NAM", "N0UR", "KI4FCQ", "PY2AXH", "IQ5DY", "K1IED", "SM2GCQ", "TM350CCAE", "PH2A", "SM2LKW", "WB9KPT", "UT4UF", "IU4DTT", "EA2KV", "UZ5DX", "EG2JCR", "G4SJP", "SV9SIX/B", "F1CPX", "JA1VJQ", "4V1G", "LZ1BK", "SP7QJF", "N3CMH", "W0PBU", "K4KSW", "OK1RP", "PY4XX", "EA3HOO", "RN3AKK", "JF2UEE", "UY5AR", "UR3EE", "EA7OR", "DL5RBW/MOB", "DL9LBH", "F5IQG/P", "IU8JCQ", "EK7DX", "EA7KB", "IN3FXP/P", "RI1ON", "PE1EWR", "SV9SIX", "VE3CRG", "EA5KB/P", "AM825TL", "IZ8IEV/I5", "JE1BM1", "EA5ST", "3B9FR", "JA1RJU", "EA4BQ/EA8", "F6KRK", "R1CA/3", "SP4KM", "EA7RV", "W4HLR", "OE3DXA", "I2FAK", "OE5VRL/5", "W1JJ", "RC20RT", "JA1MSS", "JA8DNV", "N3RD", "IF9/ITA9PPG", "UR7GO", "DK0DFF", "IQ2CF", "G4CCZ", "K8MMM/B", "TM39CDXC", "KF2T/M", "RK3XWA", "VK3YFD", "K0GU", "DL0DN", "PY5WW", "EW1ZR/1/A", "OX3DB", "UA1AAE", "YO8TMR", "TM8MC", "R20EKB", "W4FFW", "WB8YXF", "R6YA", "A41CK", "A45XR", "A25NPD", "W5IR", "I3/DK1WV", "W3VV", "EA9IB", "KB7Q", "F6HTE", "R20VLG", "MM0AWA", "LU1AAS/D", "UA3SNG", "4S7AVR", "EA2EZ", "W4TTU", "W0GLB", "IT9PQJ", "4Z5FW", "IU6FUB", "W1KOK", "KB5SET", "YB3DIK", "VX3VFA", "R17CUP", "R25ILIM", "A25AL", "EA1IPH", "C1TV", "AO1IBT", "ZL2OK", "KB6WBO", "DM60BER", "RC3KA", "EK4JJ", "S500R", "F5KKE/P", "VE7DXF", "SO5CAL/P", "PA6STAR/M", "BG7BEG", "RZ6AQX", "RN9N/M", "AA0MO", "EA1BQR/P", "HB/DJ5AA/P", "YL2GJX", "K9ZW", "VK8MS", "I0/R1AR", "F5IAE", "ON7RT/P", "TY2AB", "OK1AGE", "DL2QB", "UN7TX", "OT4V/P", "KD7YZ", "V53DX", "EA5CB", "HZ1TT", "CF7GEM", "RC20CFO", "JR1IZM", "OK1USU", "ON2VR/P", "2W1ACM", "HH2AA", "EA1CIG", "F1UBA", "NU5DE", "VK1TX", "IZ5PTK", "EA5GGU", "Z60A"], "mots": ["OASIS", "HABITER", "BOUGE", "KAKI", "TREUIL", "VERBALE", "DIEPPE", "COOL", "CRIBLE", "VULCAIN", "LAGUNE", "IMPORT", "BRODEE", "ONGUENT", "LYRE", "AINSI", "CHOUAN", "FETARD", "HUBERT", "CABRER", "MI AOUT", "INTENSE", "EXISTER", "RAYER", "NIPPE", "LISTE", "MISTRAL", "FAGOT", "SPEAKER", "DEGAT", "LOQUET", "RAVISER", "CONGE", "TEMPETE", "LIBRE", "PARLOIR", "VEUVE", "CASERNE", "GILET", "DRAINEE", "RECURER", "JAFFA", "CAPTAGE", "PIE", "MARINA", "CITER", "TRIPLER", "FLAMANT", "REFUTER", "POTER", "IULE", "IODE", "GISANTE", "FINALE", "RADON", "HIATUS", "REPAIRE", "BIDE", "SOLOGNE", "ZAIRE", "DICTEE", "TINTIN", "MELOPEE", "CIRER", "MEETING", "CRETE", "PARFAIT", "SARCOME", "ORBITE", "POELER", "EPINE", "TOMETTE", "AMPUTEE", "THEORIE", "LABEL", "LAND", "RICIN", "MORDRE", "CUBE", "PAROLE", "DESERT", "TOI", "PIRATE", "CUISTRE", "ALMA", "GERCER", "CHAPON", "STELE", "GALION", "ARETE", "FRIPE", "JALON", "BITUME", "PRONER", "BIEN", "ORAGE", "TSAR", "JUMBO", "REPRISE", "PRONOM", "EVALUER", "GOUTTER", "LIQUEUR", "ILOTAGE", "TOUPET", "TOLERER", "PETOIRE", "NULLE", "MOTION", "ALVEOLE", "FANEE", "CALE", "AVALER", "BRIE", "CHUTE", "NYLON", "CLIQUER", "CHASSEE", "COMETE", "MAGALI", "VERTE", "SAMIA", "BIJOU", "EUCLIDE", "GOBER", "PORE", "SAOULEE", "ETABLIR", "NETTETE", "FLAQUE", "FREINEE", "EMILE", "GOUGE", "KIT", "CLIMAT", "GRELOT", "ASSENER", "TORONTO", "ROUSSIR", "GLOTTE", "CONTOUR", "BUTE", "INCUBE", "QUETE", "SELON", "CAPOTE", "ACCUSEE", "COUCOU", "COGNER", "JUSTINE", "EVELYNE", "STEAK", "HAVRE", "PERLER", "CAVITE", "INFUSE", "MYCOSE", "DELIEE", "RUCHER", "AMADOU", "BRANDON", "LISERON", "HARISSA", "FOUINER", "ORANGER", "FARCIN", "TASSEAU", "TRES", "EXCES", "ETIOLER", "CACHOU", "BOUDER", "GUIDON", "AZUR", "YVAN", "RENOUER", "HOUSTON", "GLISSER", "KILO", "OPINER", "SATURNE", "MOUCHER", "FOIX", "MARINER", "CROTTE", "TICKET", "FRONCEE", "RACINE", "LEONIE", "VOYAGE", "FUREUR", "TAU", "CAMERA", "CAHUTE", "GREFFER", "RATER", "MASSUE", "OCULUS", "HARDIE", "RUADE", "FALZAR", "IRENE", "POIREAU", "LOUCHE", "PUNIR", "JAVA", "OISEAU", "FACONDE", "PAILLEE", "DEGAINE", "USINAGE", "BUNKER", "METIER", "CARAFE", "NORD", "BANCO", "TONDRE", "AEREE", "TOURNOI", "TROP", "JUPITER", "GALA", "CONAN", "HALAL", "OBTURER", "HALTE", "ENVIER", "VICHY", "IRE", "SOLVANT", "AURELIE", "INSTANT", "CLOITRE", "SANTIAG", "TRONE", "DEPUIS", "RENNE", "ONGULEE", "JEUN", "GLACEE", "APPUYEE", "PORTER", "CLORE", "PALAIS", "LEVI", "GUYANE", "ENFUIR", "ARMENIE", "BOUGRE", "VALENCE", "ANONNER", "MOLLAH", "FOLIE", "ONCE", "MIKE", "RABAT", "GRANDIE", "AILETTE", "EGLISE", "URBAIN", "SACHET", "BERNEE", "REVELER", "BIDULE", "ROBERT", "PISTE", "OVIN", "CENSEE", "FABIEN", "GRASSE", "CADRAN", "LASSO", "LISIERE", "AFFERER", "CROUTE", "ALLUMEE", "JEHOVAH", "MAGRET", "DRESDE", "ALINE", "FLAPIE", "FILTRE", "PIGMENT", "HUIS", "MONOME", "MAREE", "BROCHET", "TESLA", "VIZIR", "RASEUSE", "NOTRE", "ART", "TAROT", "NOMMAGE", "ITEM", "POINTER", "AVION", "ETAYAGE", "JOUET", "SAISIR", "JADE", "BRIGUER", "CHETIVE", "CONFIEE", "POUPE", "BRUINE", "ORDRE", "TONTINE", "QUOI", "PIECE", "AVOUEE", "VOLTAGE", "SEIN", "ONCLE", "JACK", "BLAGUE", "FRICHE", "FORME", "ORGUEIL", "MEDICIS", "MASSIF", "FLORENT", "EFFORT", "MASSER", "VAN", "TROUVEE", "FIEF", "DEMISE", "SCANNER", "LORETTE", "GLUTEN", "CHAULEE", "MALIK", "MAX", "AUCH", "KARATE", "LAMBEAU", "AMOUR", "DECIBEL", "JEUDI", "FAVEUR", "HACKER", "AFFOLER", "SUD", "BLASER", "LIEUSE", "GRENIER", "TRACHEE", "AGREGAT", "ENTETE", "RUSE", "NACRER", "FELIBRE", "PINCEAU", "GODER", "FABLE", "EXEMPTE", "CAPULET", "DIGNE", "AIMER", "CASSIS", "LAQUAGE", "PORCHE", "BOITIER", "HUER", "BORIS", "CHATTE", "DETAXE", "BORNAGE", "RHENANE", "PUNCH", "PRENEUR", "FEUTRE", "FIERTE", "MUSE", "BOCAL", "QUIZ", "DIZAINE", "NOLWENN", "PIEGER", "CUMIN", "BECASSE", "RANIMEE", "CLAMEUR", "BERLINE", "BAGNEUX", "MICHEL", "CRI CRI", "TRANSIT", "ROCOCO", "TROGNON", "LOIC", "PARI", "CHAMEAU", "DONJON", "PUREE", "PENTANE", "CASER", "OMBILIC", "MUFLE", "PEINDRE", "MAQUIS", "ECLATEE", "JOCONDE", "DALLE", "LONDRES", "EXPIREE", "FICHER", "COLA", "GAGER", "OUVRAGE", "VIBREUR", "SULFATE", "FER", "MARCHE", "ECUME", "VISITEE", "JEREMY", "INJUSTE", "CANTATE", "TWIST", "NEVRITE", "LILIAN", "EXTREME", "MIRE", "COCOTER", "RUE", "LOTO", "TITANE", "PRUSSE", "PAIRE", "MALTE", "ETROITE", "MUE", "COLLER", "OPHELIE", "ASSUMER", "SADIQUE", "BOUDDHA", "PROGRES", "BOMBER", "COURBER", "DECHET", "INDEMNE", "DEVOYER", "QUOTITE", "NUBILE", "COASSER", "BUFFALO", "CASTRES", "PRIMEUR", "APERCU", "CALMER", "EXOGENE", "NOIRCIR", "DAKAR", "JUMENT", "BILBAO", "NEPTUNE", "MACAQUE", "COUSINE", "ALBUM", "PAUME", "ZEBU", "REDUITE", "SUD EST", "POTAGE", "PURIN", "COUENNE", "BELLE", "DECELEE", "AOUT", "PLAIE", "SOLEX", "ROCK", "BLAIR", "OPPOSER", "PROFANE", "VACANCE", "EPONGER", "CEREALE", "JULIA", "POMPER", "COSTUME", "ETHANE", "TUMULTE", "LUTTE", "SNOB", "YALTA", "LAPIDER", "MOLLET", "FILMAGE", "HUMBLE", "GRIGRI", "GLASGOW", "HONNIE", "SACCAGE", "DRONE", "ALLAN", "LIBERER", "BRULE", "TARTE", "ECUSSON", "AMUSER", "DIRES", "NUE", "MARGOT", "CHUTER", "DIRIGER", "CHINE", "BAS", "SOLENE", "FLASHER", "DIAPO", "TOISE", "VIREE", "BUSTE", "TUBE", "EPURER", "COURS", "CARLOS", "CANDICE", "INDIGO", "PETITE", "COULOIR", "ANTOINE", "BOBONNE", "NAPPE", "HARAS", "CAUSE", "RINCER", "GUERET", "QUI", "AVIS", "PAREE", "ROSATRE", "REELLE", "USINE", "BRIBE", "PAMEE", "REFLUER", "DUQUEL", "SUC", "PIAULER", "RADIALE", "PINCER", "CADMIUM", "GATERIE", "ENLEVER", "VENTER", "ONZIEME", "CHARLOT", "CHARIOT", "ANTIBES", "FREMIR", "FATALE", "COURTE", "MEGANE", "ACCULER", "CEYLAN", "TOUR", "SOIGNER", "BLUFF", "ENFOUIE", "VAMP", "LUCETTE", "HALE", "CROQUIS", "GOURDIN", "ESCROC", "PIONNE", "YO YO", "SONDE", "APRE", "TIMBRER", "APERO", "HISSEE", "OYONNAX", "BUTTAGE", "CREER", "CINQ", "PICKUP", "EXHIBER", "HAMMAM", "FRATRIE", "ENLISER", "BAISSEE", "SLOW", "ONTARIO", "DORMIR", "ARE", "MANIER", "ENCRE", "SIROP", "GOYA", "BUTANE", "CANICHE", "REGLE", "REFLUX", "LEGALE", "HOMELIE", "SEICHE", "DESUNIE", "GIROLE", "BOTTE", "SYLLABE", "TOMBER", "MELISSA", "FRANCHE", "COUVEE", "VALABLE", "LIMITEE", "TABLE", "ESSUIE", "GIGOGNE", "PISTER", "MOTIF", "RHIN", "PEINE", "JEUNER", "ICARE", "AVIAIRE", "HALLALI", "CRICRI", "GALLE", "COLINE", "LIBERIA", "LONGUE", "DENISE", "FUTILE", "PLOYER", "EMARGEE", "FOUINE", "ARENE", "CHOYEE", "QUARTZ", "EGERIE", "ETHER", "PARVIS", "HERBAGE", "STRIER", "BURKINA", "IVRAIE", "MERCI", "VALLEE", "FAT", "JUBILER", "SUNNITE", "WILFRID", "MODULO", "ANDES", "DEMAIN", "MAGNUM", "RIVETEE", "TOC", "MAESTRO", "BILLION", "FAUVE", "TUNIQUE", "AUMONE", "DOUBLET", "KIRCH", "LUDIQUE", "COLLINE", "SIRENE", "TERRINE", "MEGOT", "VITRER", "EMIRAT", "ETENDRE", "CORTEX", "DOPE", "VOIRE", "SUBTILE", "BREST", "VAINCUE", "TAVERNE", "RABLE", "GARAGE", "GAIETE", "AGNELET", "KIKI", "AGENCE", "POIVRE", "CELLE", "MORUE", "EGO", "BANGUI", "FEU", "TRIPODE", "PAGINER", "MEULER", "QUOIQUE", "ETUVER", "POSITON", "TIMBALE", "MAILLEE", "TORSE", "MAC", "RELAXER", "OUBLI", "LACHER", "VIRUS", "NORBERT", "BARAKA", "SECANTE", "GRIMACE", "LAICITE", "DUREE", "MOELLON", "PIPER", "DECODER", "GAUSS", "AJOURER", "PARKA", "MEANDRE", "MIAMI", "HERCULE", "VETUSTE", "AROBASE", "CLE", "ESPAGNE", "YASMINE", "DACTYLO", "BAILLON", "MERGUEZ", "INITIER", "YEN", "BEDANE", "DIESE", "ENIVREE", "AMBRE", "ROSSE", "FILTREE", "TRETEAU", "MELINA", "BIBINE", "SKETCH", "RAINAGE", "FLAGADA", "LASAGNE", "GIROFLE", "DIKTAT", "KITSCH", "SAMUEL", "DELUREE", "EXCLURE", "MAILLOT", "BRANLER", "TRAIRE", "LAVEE", "RAVIOLI", "DEBINE", "MIEL", "INDIANA", "DEVISER", "SUIVRE", "RHINITE", "ISOLEE", "HERSE", "GOND", "ETALEE", "MAGIE", "CANCAN", "SAUT", "ROSALIE", "TARER", "MACHER", "MASSE", "TZIGANE", "RELIEF", "SOMBRER", "MOUJIK", "EMMURER", "NAUSEE", "EVENTEE", "EXERESE", "MECANO", "FICELER", "AGAPE", "ESSAYER", "GIFLER", "INCITER", "FERTILE", "CANCRE", "PUITS", "FOIE", "EROSION", "EAU", "SERRURE", "ENTREE", "JUBILE", "ONDE", "REVEIL", "TRUISME", "QUALITE", "SEAU", "BRUTE", "EMIGREE", "ICI", "BONSAI", "BALISE", "PATTE", "DOLLAR", "LISIEUX", "FISTULE", "BE BOP", "LOIRE", "COBAYE", "ETAMEE", "DEBRIS", "PALEUR", "DIVA", "DELA", "ENLEVEE", "POPOTE", "RAM", "SALADE", "BAGUE", "JAM", "BALAFON", "HAPPER", "BAREME", "SMALA", "RIDER", "AGRUME", "ROBIN", "OPALE", "EROGENE", "SIROTER", "AU DELA", "SAGACE", "NOMBRIL", "FLICAGE", "PROCEDE", "OTTAWA", "MASURE", "COUT", "BLAME", "ISERE", "MOTRICE", "RUSSE", "LAON", "SAULE", "ALABAMA", "OUAILLE", "TONIQUE", "TACHER", "PAS", "CRAWL", "CONCAVE", "LISIER", "NOMMER", "TON", "CECITE", "BRUYERE", "VITALE", "MEGERE", "FAILLE", "CIRAGE", "MILLE", "AIRES", "CREPE", "DREUX", "GERALD", "DIETE", "MACULER", "OBSCENE", "SEINE", "CAPE", "HALLE", "VIGUEUR", "EXHUMEE", "VENUE", "GRACIEE", "CANER", "BRAVE", "DAUBE", "RIPOSTE", "SOURCE", "CAID", "VIRGULE", "ZOOM", "HERMANN", "VERGE", "ROMANDE", "CHARGE", "BOEUF", "LITIGE", "FLUOR", "PALETTE", "GIGABIT", "MUTILER", "DURER", "REFUTEE", "GUIDE", "REPAS", "GLACE", "ETAGER", "ECHINE", "SCORBUT", "METRE", "VERBE", "DRAILLE", "SERBE", "TARAGE", "HUILE", "DOUMA", "BETTE", "PENTUE", "PERORER", "FRANCK", "AFFAMER", "MORDUE", "KRYPTON", "SLIP", "RELEVE", "PAILLER", "PRISE", "BOHEME", "DINAR", "AFIN", "GREVE", "HARO", "BRAME", "BANDE", "MUSCLER", "LUCIOLE", "JASMIN", "PUDIQUE", "GEEK", "BOMBAY", "MABOULE", "DEVOLUE", "DESTIN", "DOGME", "CAILLE", "GOURMET", "CERNE", "AORTE", "AIMANT", "PARQUEE", "INCISEE", "LABOUR", "GACHIS", "RACLAGE", "MACRAME", "FELLAGA", "SERRE", "DODO", "METIS", "CLAUDIE", "ZODIAC", "CETTE", "AVRIL", "BRIQUET", "ATTIRER", "DOREE", "BUTTEE", "ROUTINE", "ABOLIR", "DAIM", "MALI", "APLOMB", "LAINAGE", "PIEU", "OCCASE", "GENOU", "ESPERER", "DEFILE", "LUBIE", "GHANA", "COUTEAU", "TSE TSE", "SOTTE", "CONVIVE", "GRAPHIE", "CRIBLEE", "FAUTER", "SOLAIRE", "TANIERE", "SAUTOIR", "SUAVE", "HIVER", "PANURE", "BIZUTEE", "CLAUDE", "BODY", "GUEULE", "HARVARD", "LOUTRE", "NURSE", "VOLANTE", "CALAIS", "DELTA", "ALESAGE", "IDYLLE", "FISSURE", "ELODIE", "DOUBS", "CHIC", "FRIGO", "RUCHE", "BAMBOU", "JUCHER", "ACETONE", "LEZ", "LOUP", "CHEVRE", "YAOUNDE", "GLUCIDE", "SAUNA", "CHAIRE", "MAURICE", "ENCAN", "FACHO", "DENUER", "CUISINE", "TABLOID", "PANSER", "UNE", "ZEUS", "IMAGER", "ETRON", "VERANDA", "CANTAL", "OSER", "DAMIER", "JOHN", "ELIRE", "FLAN", "REGLER", "CHAOS", "COCKER", "FEROCE", "TUTRICE", "AISEE", "CAMPER", "TYPON", "DONC", "FESTIN", "REF", "ARPENT", "METEO", "RIMMEL", "DYSPNEE", "NUQUE", "MOINE", "PREDIRE", "DEFAIRE", "DIALYSE", "TRIPOLI", "RENTREE", "RAPPORT", "SERMON", "VANILLE", "OXFORD", "VIE", "NEVROSE", "LEVEE", "ANTIGEL", "PIONCER", "FESSE", "BRESIL", "VOILA", "KARINE", "FOETALE", "RIYAD", "OMAR", "POMPEI", "SIMULEE", "POUTRE", "GALERE", "CUPIDE", "LOUISE", "FRITTER", "LOGEUSE", "MANGER", "EPATEE", "DANSE", "DELAVER", "POULPE", "FLEURON", "AUTO", "DARD", "GRAVE", "REQUISE", "YVONNE", "KAMPALA", "CLOUTEE", "BAVER", "LIANTE", "ADULER", "DEVIEE", "DEFONCE", "REIMS", "TRIAL", "DETTE", "FIORD", "NOEUD", "CACHOT", "DURCIR", "FUTEE", "BINER", "GREGORY", "CHANTEE", "ACTION", "GRANIT", "STORE", "CHARME", "PISSER", "SORTIR", "BALAYEE", "DURCIE", "FACILE", "FORTE", "FRICOT", "LEO", "LINO", "CASTRAT", "METISSE", "ENCLOS", "LAITON", "SNACK", "YOUSSEF", "JUGALE", "BRASSEE", "ENFOUIR", "CANTON", "QUIGNON", "BAFFLE", "OLIVIA", "OBEIR", "SIEGER", "SCANDER", "ENVIRON", "FOOT", "CREUSOT", "DOUZE", "ENVIEE", "BATIR", "ISAAC", "IDA", "TRANSAT", "BAHREIN", "ELANCEE", "ANDREA", "SOLANGE", "DIME", "SOUTANE", "EXEMPLE", "AUTRICE", "BURQA", "MOUETTE", "VIEUX", "ARRETER", "RIFLARD", "WEBCAM", "MOITE", "CARNET", "VELUX", "RIPAGE", "PLAQUE", "IMBIBER", "PORT", "PARIS", "EVADEE", "CAJUN", "SERIQUE", "FATRAS", "POLO", "RECULEE", "KYSTE", "RADIER", "DEBOUT", "PAOLA", "OIL", "GOUFFRE", "BIPOINT", "CRANE", "ACHETER", "VOSGES", "GOUTEE", "SURINAM", "HERESIE", "BASEE", "BIBANDE", "TENABLE", "HOMO", "GLYCOL", "SPHINX", "RUFFIAN", "KAPO", "CALOT", "HARENG", "EXCUSE", "EXCLUE", "COHEN", "INHIBER", "LACHE", "INTER", "COSAQUE", "MANAGUA", "DECOUPE", "BIROUTE", "ACERER", "GERCE", "BUSE", "PALMEE", "TRUIE", "SAMBA", "RACISME", "COIFFE", "LYNCHEE", "SALLE", "BOOLE", "MOYEU", "EGALEE", "GIFLE", "GNOME", "BADGE", "TANK", "RETENUE", "MODIQUE", "MIMOSA", "CHANTRE", "VIDER", "MOULEE", "ECOSSE", "BIDET", "BAMBIN", "VENUS", "MOUDRE", "MITER", "BRYAN", "PINGRE", "CHIANTI", "SALAGE", "CHIPIE", "FLAMBEE", "COCOTTE", "CABANE", "MILLAU", "TUTORAT", "NOUNOU", "HIFI", "NITRURE", "CHICHI", "PLATRER", "LAPSUS", "TEXTURE", "KARTING", "JUSTE", "SCHNAPS", "BICHE", "FILS", "ZIZI", "ORTIE", "EGALER", "ARMANDE", "CELUI", "AHMED", "REALITE", "LYMPHE", "ANATOLE", "BAHAMAS", "EXPERTE", "CONVOI", "PLAIDER", "DAMER", "CHIPS", "FLIRTER", "ARMURE", "LILAS", "INFECTE", "ARGON", "AVENUE", "ERABLE", "GARCE", "BASSIN", "REFRAIN", "FAITAGE", "HAVANE", "VERNIER", "IMPOLIE", "SEXISME", "TUERIE", "TOUCHE", "LAMBADA", "POITOU", "BLAMER", "FEZ", "PRET", "PERCALE", "COUPER", "DESOLER", "REQUETE", "EXPLOIT", "CACHE", "RAPEE", "FERNAND", "MARTEAU", "TROC", "FERRER", "ARTERE", "LETTRE", "LEOPOLD", "FEINTE", "SEVICES", "IMITER", "DEVOUEE", "BICOT", "DESSEIN", "DIVISEE", "LEST", "INDUITE", "EMPRISE", "GRILLEE", "TROIE", "PIN", "VITRE", "VIABLE", "AMEDEE", "AVIVEE", "FROIDE", "VIBRER"], "prefix": ["2E0", "2W1", "3B9", "3D2", "3Z0", "3Z2", "3Z1", "3X1", "3X5", "3Y0", "4L1", "4L5", "4L6", "4O7", "4S7", "4U0", "4U1", "4U2", "4U5", "4U6", "4U7", "4V1", "4X1", "4X4", "4X5", "4X6", "4Z5", "5B4", "5R8", "7V5", "7X2", "7X7", "7X3", "7Z1", "8J3", "8S7", "9A2", "9A3", "9A8", "9B2", "9H1", "9J2", "9K2", "9M2", "9M4", "9M6", "9Z4", "A25", "A31", "A41", "A61", "A71", "A75", "AA0", "AA1", "AA2", "AA5", "AA7", "AA8", "AB0", "AB1", "AB4", "AC0", "AD4", "AE0", "AI1", "AL7", "B7", "BD7", "BG4", "BG7", "BG8", "BG9", "BI4", "BV5", "BX2", "C1", "C6", "CE7", "CF7", "CM2", "CM3", "CN2", "CN8", "CO2", "CO8", "CS5", "CT1", "CT2", "CX4", "CX6", "DA0", "DB1", "DB3", "DD2", "DG6", "DH5", "DJ1", "DJ2", "DJ3", "DJ6", "DJ9", "DK0", "DK1", "DK3", "DK4", "DK5", "DK6", "DK7", "DK8", "DL0", "DL1", "DL3", "DL5", "DL6", "DL8", "DL9", "DM2", "DM5", "DM6", "DO1", "DO4", "DO9", "DR5", "DS3", "DU1", "E20", "E21", "E6", "EA1", "EA2", "EA3", "EA4", "EA5", "EA6", "EA7", "EA8", "EA9", "EB1", "EB5", "EB7", "EC1", "EC2", "EC7", "ED1", "EF8", "EG2", "EG5", "EG8", "EH3", "EH7", "EI3", "EI4", "EK4", "EK7", "ER1", "ER5", "ES1", "ES2", "ES3", "ES4", "ES5", "EU8", "EW1", "EW2", "EW7", "EW3", "EX8", "F0", "F1", "F2", "F4", "F6", "F8", "FG8", "G0", "G3", "G4", "GB2", "GB3", "GB6", "GM0", "GM3", "GM6", "GM8", "GU8", "GW3", "HA1", "HA2", "HA5", "HA6", "HA8", "HA9", "HB9", "HD8", "HF0", "HF6", "HF8", "HG17", "HG1", "HG6", "HH2", "HK3", "HL1", "HL4", "HL5", "HS0", "HS7", "HZ1", "I0", "I1", "I2", "I3", "I4", "I6", "IF9", "II0", "II1", "II2", "II3", "II5", "II8", "II9", "IK0", "IK1", "IK2", "IK4", "IK6", "IK7", "IK8", "IN3", "IP1", "IQ0", "IQ1", "IQ2", "IQ3", "IQ4", "IQ5", "IQ6", "IQ7", "IQ8", "IQ9", "IR0", "IS0", "IT9", "IU0", "IU1", "IU2", "IU4", "IU6", "IU8", "IV3", "IW1", "IW2", "IW3", "IW6", "IW8", "IW9", "IZ0", "IZ1", "IZ2", "IZ4", "IZ5", "IZ8", "JA1", "JA2", "JA3", "JA4", "JA6", "JA7", "JA8", "JA9", "JE1", "JE2", "JE8", "JF2", "JF3", "JF7", "JG1", "JG2", "JH0", "JH1", "JH2", "JH4", "JH6", "JH7", "JH9", "JI1", "JJ0", "JJ2", "JM3", "JO1", "JO3", "JR1", "JR4", "JT1", "JT5", "K0", "K1", "K2", "K3", "K4", "K5", "K6", "K7", "K8", "K9", "KA0", "KA1", "KA4", "KA9", "KB3", "KB5", "KB6", "KB7", "KC3", "KC4", "KD2", "KD4", "KD5", "KD7", "KE1", "KE6", "KF2", "KF4", "KF6", "KF8", "KH0", "KI4", "KI6", "KK4", "KL7", "KM4", "KM5", "KO6", "KP4", "KQ4", "KR7", "KR8", "KS4", "KV4", "KV8", "KW7", "LA2", "LA5", "LA6", "LA7", "LB0", "LB3", "LU1", "LU2", "LU5", "LU7", "LU8", "LX1", "LZ0", "LZ1", "LZ2", "LZ5", "M0", "M2", "M5", "M6", "MM0", "MW3", "MX0", "N0", "N1", "N2", "N3", "N4", "N5", "N6", "N7", "N8", "N9", "NA2", "NC1", "NC2", "ND4", "NF8", "NG4", "NM9", "NO4", "NP4", "NQ5", "NR5", "NS1", "NT4", "NU5", "NX8", "OD5", "OE3", "OE5", "OE6", "OE8", "OF2", "OF3", "OF5", "OF6", "OF7", "OG8", "OH0", "OH1", "OH2", "OH3", "OH6", "OH7", "OH8", "OH9", "OJ0", "OK0", "OK1", "OK2", "OL1", "OL2", "OL3", "OM2", "OM3", "OM6", "ON0", "ON2", "ON3", "ON4", "ON5", "ON6", "ON7", "ON8", "OR7", "OT4", "OX3", "OZ1", "OZ2", "OZ4", "OZ7", "PA0", "PA2", "PA3", "PA5", "PA6", "PA7", "PB8", "PD0", "PD1", "PE1", "PH1", "PH2", "PI4", "PR7", "PU2", "PU5", "PV8", "PY2", "PY4", "PY5", "PY6", "PY7", "R0", "R1", "R20", "R24", "R25", "R2", "R3", "R44", "R4", "R63", "R6", "R7", "R9", "RA1", "RA3", "RA4", "RC2", "RC3", "RC9", "RD9", "RG0", "RG5", "RG7", "RI0", "RI1", "RK0", "RK2", "RL3", "RL5", "RM7", "RN2", "RN3", "RN6", "RU1", "RU2", "RU4", "RV9", "RW0", "RW3", "RW4", "RW9", "RX6", "RX9", "RY2", "RZ3", "RZ4", "RZ5", "RZ6", "S01", "S50", "S51", "S55", "S56", "S58", "S59", "SA7", "SF3", "SJ7", "SL1", "SM0", "SM2", "SM3", "SM5", "SM6", "SM7", "SN0", "SO5", "SP1", "SP2", "SP3", "SP4", "SP5", "SP6", "SP7", "SP8", "SP9", "SQ5", "QS7", "SQ8", "SQ9", "SU1", "SV1", "SV2", "SV3", "SV5", "SV6", "SV7", "SV8", "SV9", "SY2", "SZ2", "T77", "TA1", "TA3", "TA7", "TF3", "TI2", "TK4", "TR8", "TX5", "TY2", "TZ4", "TZ5", "UA1", "UA2", "UA3", "UA4", "UA6", "UA7", "UA9", "UB3", "UB5", "UB8", "UC7", "UE0", "UE1", "UE3", "UE7", "UE8", "UF0", "UF1", "UF5", "UF6", "UN7", "UN8", "UN9", "UR3", "UR5", "UR6", "UR7", "UR8", "UR9", "US0", "US5", "UT1", "UT3", "UT4", "UT7", "UW2", "UW8", "UX7", "UX8", "UY5", "UZ5", "V21", "V25", "V26", "V51", "V53", "V6", "V85", "VA2", "VA3", "VA6", "VB3", "VB7", "VE2", "VE3", "VE4", "VE5", "VE6", "VE7", "VE9", "VK1", "VK2", "VK3", "VK4", "VK5", "VK6", "VK8", "VK9", "VP2", "VP5", "VP7", "VP8", "VP9", "VR2", "VU2", "VU3", "VX3", "W0", "W1", "W2", "W3", "W4", "W5", "W6", "W7", "W8", "W9", "WA0", "WA1", "WA3", "WA4", "WA7", "WA8", "WA9", "WB0", "WB2", "WB4", "WB5", "WB8", "WB9", "WC4", "WD4", "WD9", "WG2", "WH6", "WP4", "WR7", "WU2", "WV4", "WW8", "WY5", "WZ4", "WZ8", "XE1", "XE2", "XW4", "YA5", "YB0", "YB1", "YB3", "YB8", "YC1", "YC9", "YD8", "YD9", "YE3", "YG7", "YI3", "YL2", "YO1", "YO2", "YO3", "YO4", "YO5", "YO7", "YO8", "YT1", "YT5", "YT9", "YU1", "YU4", "YU5", "YW1", "YW2", "YW3", "YW4", "YW5", "YW6", "YW7", "YW8", "ZA1", "ZB2", "ZD7", "ZL1", "ZL2", "ZL4", "ZS1", "ZS2", "ZS4", "ZS5", "ZS6", "ZS8", "Z60"], "citations": ["En cw la lettre passée n'existe plus, seule la présente compte.", "En morse la main écrit, sans savoir, comme un automate.", "Le Morse chante et c'est la main qui écoute.", "Un point n'est jamais assez bref un trait est toujours trop long.", "Le calme est un triomphe sous l'avalanche des points-traits.", "Le savoir que l'on ne complète pas chaque jour diminue tous les jours.", "Dans le doute, un homme de valeur s'en remet à sa propre sagesse.", "On ne croit plus celui qui mentit une fois, lors même qu'il proclame la vérité.", "La science nous montre le terme de notre raison, l'ignorance l'éloigne toujours.", "Attends-toi à recevoir des autres ce que tu auras fait à autrui.", "Contre la médisance il n'est point de rempart.", "Je suis libre car je sais que je suis moralement seul responsable de tous mes actes.", "Le premier savoir est le savoir de mon ignorance  c'est le début de l'intelligence.", "Le travail, c'est le refuge des gens qui n'ont rien de mieux à faire.", "La déception ne vient jamais des autres, elle n'est que le reflet de nos erreurs de jugement.", "L'art de gouverner consiste à prendre le plus d'argent possible à une catégorie de citoyens afin de le donner à une autre.", "La sérénité, c'est l'acceptation de soi-même et de ce qui est.", "Si je ne peux changer une situation, je peux en transformer le sens.", "Chaque journée est une petite vie, chaque réveil et chaque lever une petite naissance.", "La science de ton passé est ton passeport pour l'avenir.", "L'ordre est le plaisir de la raison, mais le désordre est le délice de l'imagination.", "La vie, comme courir, n'est pas juste une question de temps, mais bien nos expériences tout au long du trajet.", "Apres le départ d'un proche, il ne faut pas pleurer de chagrin mais de joie. Plutôt que regretter ce qui n'est plus, on doit se réjouir de ce qui a été.", "On est plus heureux en pardonnant qu'en exigeant.", "Le sourire est l'amulette des gens civilisés.", "Plus les idées s'élargissent et plus les pensées se condensent.", "L'amour est un petit bateau qui s'en va, tout joyeux, sur l'onde, voguant vers des pays nouveaux au hasard de sa course vagabonde.", "Sortir avec bonne grâce et politesse, c'est sortir par la bonne porte.", "J'avais l'habitude de courir pour arriver là où j'allais, mais je n'ai jamais pensé que cela me rendrait n'importe où.", "C'est plus facile de descendre une colline que de la monter, mais la vue est beaucoup mieux au sommet.", "Nous courons, non pas parce que nous pensons que cela nous fait du bien, mais parce que nous aimons ça et nous n’y pouvons rien.", "Ce qu'on rencontre dans la vie est la destinée. La façon dont on la rencontre est l'effort personnel.", "L'homme le plus sage est celui qui de ses propres erreurs apprend à se garder des rechutes.", "La première condition du développement de l'esprit, c'est sa liberté.", "Chacun en cette vie doit choisir sa propre route, et parcourir seul son chemin.", "On peut d'un sourire guérir les peines de quelqu'un qu'on ne connaît pas.", "Soyez ce que vous devez être.", "Le succès n'est pas final, l'échec n'est pas fatal, c'est le courage de continuer qui compte.", "Pour faire l'achat d'un domaine, réfléchis plus d'une semaine.", "La gourmandise commence quand on n'a plus faim.", "Le repos rend l'esprit plus libre et plus sain pour réfléchir.", "L'homme content de son sort ne connaît pas la ruine.", "Le bon sens est de tout âge, et il ne vieillit jamais.", "L'imagination est la mémoire de l'avenir.", "Rien de plus précieux en ce monde qu'un ami prêt à vous aider.", "La raison d'être d'une organisation est de permettre à des gens ordinaires de faire des choses extraordinaires.", "L'homme qui tient le pied de l'échelle rend souvent plus de services que celui qui est au sommet.", "Si tu prends le monde comme il vient, il te prendra doucement.", "Tout être humain est un entrepreneur non pas parce qu'il doit fonder des entreprises mais parce que la volonté de créer est encodée dans son ADN.", "Le bonheur qui se propage éloigne l'infortune.", "Le meilleur gouvernement est celui où il y a le moins d'hommes inutiles.", "C'est à partir de toi que j'ai dit oui au monde.", "La pensée positive vous permettra de tout faire d’une meilleure façon que la pensée négative.", "Les leaders ne forcent personne à les suivre, ils les invitent à un voyage.", "La première vertu d'un peuple est de ne jamais désespérer de ses destinées.", "Le passé est un phare, non un port.", "Réunir toutes nos facultés dans une action commune est le dernier effort de la volonté et le premier effet de la passion.", "L'hôte est un envoyé de Dieu, on doit l'accueillir avec beaucoup de respect.", "Tout le monde savait que c’était impossible à faire. Puis un jour, quelqu’un est arrivé qui ne le savait pas et il l’a fait.", "Il faut se défendre des hypocrites, et surtout ne pas s'abandonner à la merci de la malveillance calomnieuse.", "Ceux qui se découragent ont tort, le monde refleurit toujours, le tout est de survivre aux orages.", "La vie est un mystère qu'il faut vivre, et non un problème à résoudre.", "La sagesse n'est point dans le nombre des années mais dans la tête.", "On juge mieux d'un homme par ses admirations que par ses antipathies.", "Arrivés à un certain âge, on n'est plus des gens pressés.", "L'art d'être tantôt très audacieux et tantôt très prudent est l'art de réussir.", "Je crois beaucoup en la chance, et je constate que plus je travaille, plus elle me sourit.", "Pas de mauvais vent qui n'apporte quelque chose de bon.", "Bien vieillir  gagner en transparence ce qu'on perd en couleur.", "Le loisir est le meilleur des biens.", "Réfléchis avec lenteur, mais exécute rapidement tes décisions.", "Communiquer avec quelqu'un, c'est faire ensemble un voyage en se comprenant.", "Commission  groupe de personnes incapables de faire quoi que ce soit par elles-mêmes et qui décident collectivement que rien ne peut être fait !", "Les vacances c'est la période qui permet aux employés de se souvenir que les affaires peuvent continuer sans eux.", "Ce n'est que lorsque le ciel est noir que nous pouvons voir les étoiles.", "Quelque part quelque chose d'incroyable attend d'être connu.", "Le bonheur n'a décidément rien à voir avec le confort  aujourd'hui, on est de mieux en mieux chez soi et de moins en moins bien dans sa peau. Il ne faut pas confondre vie intérieure et vie à domicile.", "Les étoiles sont nos ancêtres nous sommes des poussières d'étoile c'est une des grandes découvertes de l'astronomie contemporaine.", "Le destin est ce que la vie fait de nos désirs.", "Que tes choix reflètent tes espoirs et non tes peurs.", "On peut juger du caractère des hommes par leurs entreprises.", "J'aurai pu avoir une autre vie, mais c'est celle-ci qui est la mienne.", "Si tes pensées sont positives, ton visage rayonnera et tout le monde te trouvera beau.", "Il faudrait renaître une vie pour la peinture, une autre pour la musique, etc. En trois ou quatre cents ans, on pourrait peut-être se compléter.", "Ce qu'on ne fait pas, le temps le fait.", "La force du baobab est dans ses racines.", "Nous devenons ce que nous sommes à travers notre contact au monde, aux autres.", "Ce sont nos choix qui font de nous ce que nous sommes.", "L'ange qui nous a chassé du paradis a négligé de fermer quelques portes.", "Le courage consiste à donner raison aux choses quand nous ne pouvons les changer.", "Ne dis pas tout ce que tu sais , ne crois pas tout ce que tu entends , ne fais pas tout ce que tu peux.", "Je ne dois pas avoir peur. Je ne dois pas douter. Je suis l'espoir de tous. Même si je suis petit. Quand on est petit, on se faufile mieux dans les passages étroits. Donc tout ira bien.", "Tout est affaire de point de vue, et le malheur n'est souvent que le signe d'une fausse interprétation de la vie.", "Au lieu donc de nous étonner et de nous plaindre du malheur et de la brièveté de la vie, nous devons nous étonner et nous féliciter de notre bonheur et de sa durée.", "Ne baisse pas les bras, tu risquerais de le faire deux secondes avant le miracle.", "La perfection réside moins dans le spectacle que dans le voyage vers la scène.", "Si tu n'as pas tout ce que tu veux, réjouis-toi de ne pas avoir ce que tu ne veux pas.", "Après l'ouragan, l'important c'est de continuer à vivre.", "Seuls ceux qui prennent le risque d’échouer spectaculairement réussiront brillamment.", "Toutes les grandes personnes ont d'abord été des enfants. Mais peu d'entre elles s'en souviennent.", "Dans un voyage ce n'est pas la destination qui compte mais toujours le chemin parcouru, et les détours surtout.", "Ce qui perd le lièvre, ce sont ses ruses. S'il ne faisait que courir droit devant lui, il serait immortel.", "L'échec ne m'en apprendrait pas moins sur moi que le succès. L'échec est précieux pour celui qui sait apprendre.", "Il y a autant de différence entre les hommes et les femmes qu'entre un ver de terre et l'infini du cosmos.", "C'est le vrai droit du jeu de tromper le trompeur.", "Vous les femmes, vous écoutez plus le cœur et moins la bêtise, c'est pour ça que vous vivez plus longtemps.", "Une seule journée du sage vaut mieux que la vie entière d'un sot.", "On n'a jamais perdu sa journée quand on a contribué pour sa part à faire pénétrer dans une âme humaine un peu de gaieté et de lumière.", "La vie est faite d’illusions. Parmi ces illusions, certaines réussissent. Ce sont elles qui constituent la réalité.", "Quand on ne peut pas changer le monde, il faut changer le décor.", "Les idées mûrissent comme les fruits et les hommes. Il faut qu’on laisse le temps au temps.", "Il est difficile d’écraser ce qui s’aplatit sous les pieds.", "Aime, et fais ce que tu veux.", "On ne trouve jamais la réponse à des questions qu'on ne s'est pas posées.", "Ce qui fait tenir une maison, ce ne sont pas les pierres, la maçonnerie. C'est la présence humaine à l'intérieur.", "Pour pêcher un gros poisson, il faut un long fil.", "Il est extrêmement rare que la montagne soit abrupte de tous côtés.", "L’avenir est notre enfant. Formons-le.", "Tu es fait de cent mille milliards de cellules. Nous sommes, chacun, une multitude.", "Les plus grandes choses n'ont besoin que d'être dites simplement.", "Ne me dites pas que ce problème est difficile. S'il n'était pas difficile, ce ne serait pas un problème.", "Le courage c'est savoir que tu pars battu, mais d'agir quand même sans s'arrêter. Tu gagnes rarement mais cela peut arriver.", "L'amour des mères pour leurs fils n'a que faire des astres pour trouver son chemin. Il est lui-même l'étoile.", "Ne demande jamais ton chemin à quelqu'un qui le connaît, car tu pourrais ne pas t'égarer.", "Moins l'assemblée est grande, et plus elle a d'oreilles.", "La vie est un livre, parce qu'elle n'est pas muette et celui qui sait la lire devient libre, parce que sa vie se remplit de sens.", "Ce qu'il y a de plus incroyable avec les miracles, c'est qu'ils arrivent.", "Quelque chose que tu doives dire, réfléchis-y auparavant. Bien des gens parlent avant de réfléchir.", "Que la route se lève pour vous rencontrer. Que le vent soit toujours dans votre dos.", "L'amour ça déborde comme un coloriage d'enfant.", "Quand tu ne sais pas où tu vas, arrête-toi et regarde d'où tu viens.", "C'est en revenant à un endroit où rien n'a bougé qu'on réalise le mieux à quel point on a changé.", "Le passé se définit et s’éclaire par l’image que nous choisissons de lui donner.", "Il n’y a qu’une règle pour gagner le paradis aimer tant qu’on en a la force, c’est tout.", "Si tonnerre, un seul coup, fait sonner sa trompette, vous aurez tempête complète.", "La vie, ce n'est peut-être tout de même que le bonheur.", "Vis aujourd'hui, comme si c'était le dernier jour. Et fais des projets, comme si tu étais là pour l'éternité.", "Vivez pleinement la vie ! L'horreur de la mort disparaît dès lors que l'on meurt en ayant vécu jusqu'au bout !", "Les hommes naissent libres et égaux en droit. Après, ils se démerdent.", "Le temps est la chose la plus précieuse que l'homme puisse gaspiller.", "La vie est courte mais très large.", "Il ne faut pas demeurer accroché au passé. La vie est trop intéressante pour ça.", "Tout silence n'est fait que de paroles qu'on n'a pas dites.", "Je préfère l'amour sans mariage au mariage sans amour.", "De nos jours être cocu est le plus banal des accidents.", "Un vieux qui a les guiboles qui flanchent, il part en couille, c'est l'age, et c'est normal.", "Tantôt boire plus que de raison, tantôt etre en prison.", "Les niais, dans la société, doivent écouter, se taire, et s'estimer fort heureux qu'on veuille bien supporter leur présence, à titre de tapisserie.", "Dites un mensonge, on vous dira la vérité.", "La distinction de nature provoque l'admiration dans les nobles ames et la jalousie dans les ames basses.", "Ne te laisse point entraîner par les multiples tourbillons. Entre les divers mouvements de ton cœur, choisis ce qui est le plus conforme a la justice, et entre tes diverses imaginations, tiens-toi a ce que tu as clairement conçu.", "Une fleur embellie par les premiers rayons du soleil est bientôt séchée par son ardeur.", "Tu ne seras pas plus tot loin de moi, que tu désireras y revenir, et je te promets d'avance que tu seras toujours bien reçu.", "L'attente d'un plus heureux avenir est une chaine qui lie tous nos plaisirs."]};
+const QSO_DATA = {
+  "prenoms": ["JEAN", "PIERRE", "MICHEL", "ANDRE", "PHILIPPE", "ALAIN", "BERNARD", "DANIEL",
+    "ROGER", "MAURICE", "RENE", "GERARD", "PATRICK", "CLAUDE", "MARC", "ROBERT", "GUY",
+    "YVES", "FRANCOIS", "HENRI", "JACQUES", "PAUL", "GEORGES", "LOUIS", "MARCEL",
+    "JOHN", "TOM", "MIKE", "BOB", "DAVE", "STEVE", "PETER", "PAUL", "JIM", "BILL",
+    "HANS", "KARL", "FRITZ", "WERNER", "OTTO", "DENIS", "BRUNO", "OLIVIER", "STEPHANE",
+    "ERIC", "PASCAL", "DIDIER", "CHRISTIAN", "FREDERIC"],
+  "villes": ["PARIS", "LYON", "MARSEILLE", "TOULOUSE", "NANTES", "STRASBOURG", "BORDEAUX",
+    "LILLE", "RENNES", "REIMS", "TOULON", "GRENOBLE", "DIJON", "ANGERS", "NIMES",
+    "VILLEURBANNE", "CLERMONT FERRAND", "AMIENS", "LIMOGES", "TOURS", "METZ", "BESANCON",
+    "ORLEANS", "ROUEN", "MULHOUSE", "CAEN", "NANCY", "PERPIGNAN", "POITIERS", "VERSAILLES",
+    "BREST", "PAU", "LE MANS", "ANNECY", "AVIGNON", "LA ROCHELLE", "QUIMPER", "VANNES",
+    "BAYONNE", "BIARRITZ", "COLMAR", "BELFORT", "EPINAL", "CHARTRES", "BLOIS", "AGEN",
+    "AURILLAC", "CAHORS", "FOIX", "MENDE"],
+  "meteo": ["BEAU TEMPS SOLEIL", "CIEL CLAIR TEMP 18C", "NUAGEUX TEMP 12C", "PLUIE LEGERE",
+    "GRAND SOLEIL TEMP 24C", "VENT FORT", "BROUILLARD MATINAL", "ORAGE EN COURS",
+    "CIEL DEGAGE TEMP 20C", "FROID TEMP 5C", "NEIGE LEGERE", "TEMPS COUVERT",
+    "CANICULE TEMP 32C", "BISE GLACIALE", "TEMPS DOUX TEMP 15C", "AVERSES PASSAGERES"],
+  "rigs": ["YAESU FT-1000", "ICOM IC-7300", "KENWOOD TS-590", "YAESU FT-991", "ICOM IC-7600",
+    "KENWOOD TS-2000", "YAESU FT-450D", "ICOM IC-718", "ELECRAFT K3", "YAESU FTDX-101",
+    "KENWOOD TS-480", "ICOM IC-9700", "YAESU FT-DX10", "FLEX 6400"],
+  "antennes": ["DIPOLE", "G5RV", "VERTICALE", "YAGI 3 ELEMENTS", "LOOP", "BEVERAGE",
+    "MULTIBANDE", "QUAD", "TRAP DIPOLE", "FILAIRE LONGUE", "MAGNETIQUE", "DELTA LOOP"]
+};
+const QSO_FR_DATA = {
+  "prenoms": ["JEAN", "PIERRE", "MICHEL", "ANDRE", "PHILIPPE", "ALAIN", "BERNARD", "DANIEL",
+    "ROGER", "MAURICE", "RENE", "GERARD", "PATRICK", "CLAUDE", "MARC", "ROBERT", "GUY",
+    "YVES", "FRANCOIS", "HENRI", "JACQUES", "PAUL", "GEORGES", "LOUIS", "MARCEL",
+    "DENIS", "BRUNO", "OLIVIER", "STEPHANE", "ERIC", "PASCAL", "DIDIER", "CHRISTIAN",
+    "FREDERIC", "JOEL", "SERGE", "GILLES", "JACKY", "RAYMOND", "ALBERT", "GASTON"],
+  "villes": ["PARIS", "LYON", "MARSEILLE", "TOULOUSE", "NANTES", "STRASBOURG", "BORDEAUX",
+    "LILLE", "RENNES", "REIMS", "TOULON", "GRENOBLE", "DIJON", "ANGERS", "NIMES",
+    "VILLEURBANNE", "CLERMONT FERRAND", "AMIENS", "LIMOGES", "TOURS", "METZ", "BESANCON",
+    "ORLEANS", "ROUEN", "MULHOUSE", "CAEN", "NANCY", "PERPIGNAN", "POITIERS", "VERSAILLES",
+    "BREST", "PAU", "LE MANS", "ANNECY", "AVIGNON", "LA ROCHELLE", "QUIMPER", "VANNES",
+    "BAYONNE", "BIARRITZ", "COLMAR", "BELFORT", "EPINAL", "CHARTRES", "BLOIS", "AGEN",
+    "AURILLAC", "CAHORS", "FOIX", "MENDE", "FLERS"],
+  "tx": ["KENWOOD TS-990", "YAESU FT 2000", "ICOM IC-7300", "YAESU FT-991", "ICOM IC-7600",
+    "KENWOOD TS-2000", "YAESU FT-450D", "ICOM IC-718", "ELECRAFT K3", "YAESU FTDX-101",
+    "KENWOOD TS-480", "ICOM IC-9700", "YAESU FT-DX10", "FLEX 6400", "YAESU FT-1000"],
+  "puissances": ["30", "50", "70", "100", "100", "100"],
+  "antennes": [
+    {nom: "G5RV G5RV", hauteur: "10"},
+    {nom: "LOOP DE 82.50M", hauteur: "6"},
+    {nom: "DIPOLE", hauteur: "12"},
+    {nom: "VERTICALE", hauteur: "8"},
+    {nom: "YAGI 3 ELEMENTS", hauteur: "15"},
+    {nom: "MULTIBANDE", hauteur: "9"},
+    {nom: "FILAIRE LONGUE", hauteur: "7"}
+  ],
+  "meteo": [
+    {desc: "IL FAIT SOLEIL", temp: "10"},
+    {desc: "TEMPS NUAGEUX", temp: "12"},
+    {desc: "IL PLEUT", temp: "8"},
+    {desc: "GRAND SOLEIL", temp: "22"},
+    {desc: "CIEL DEGAGE", temp: "16"},
+    {desc: "TEMPS COUVERT", temp: "9"},
+    {desc: "IL FAIT FROID", temp: "3"},
+    {desc: "TEMPS DOUX", temp: "18"}
+  ]
+};
+
+</script>
+<script>
+/* ============================================================
+   RX·CW — Entraîneur Morse
+   Moteur audio + logique de jeu
+   ============================================================ */
+
+(() => {
+"use strict";
+
+/* ---------- Table Morse ---------- */
+const MORSE = {
+  A:".-", B:"-...", C:"-.-.", D:"-..", E:".", F:"..-.", G:"--.", H:"....",
+  I:"..", J:".---", K:"-.-", L:".-..", M:"--", N:"-.", O:"---", P:".--.",
+  Q:"--.-", R:".-.", S:"...", T:"-", U:"..-", V:"...-", W:".--", X:"-..-",
+  Y:"-.--", Z:"--..",
+  "0":"-----", "1":".----", "2":"..---", "3":"...--", "4":"....-",
+  "5":".....", "6":"-....", "7":"--...", "8":"---..", "9":"----.",
+  "/":"-..-.", ".":".-.-.-", ",":"--..--", "?":"..--..", "'":".----.",
+  "!":"-.-.--", "-":"-....-", "(":"-.--.", ")":"-.--.-", "&":".-...",
+  ":":"---...", ";":"-.-.-.", "=":"-...-", "+":".-.-.", "_":"..--.-",
+  '"':".-..-.", "$":"...-..-", "@":".--.-."
+};
+
+const ALPHA_ORDER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".split("");
+
+/* ---------- Etat global ---------- */
+const state = {
+  mode: "calls",
+  wpm: 20,
+  freq: 700,
+  groupLen: 5,
+  farnsworth: 0,
+  noise: false,
+  echo: true,
+  mycall: "F4GOP",
+  playing: false,
+  currentTarget: "",
+  revealUsed: false,
+  repeatCount: 0,
+  stats: { correct:0, total:0, streak:0, best:0, log:[] },
+};
+
+const STORAGE_KEY = "rxcw_stats_v1";
+const PREFS_KEY   = "rxcw_prefs_v1";
+
+/* ---------- Persistance légère ---------- */
+function loadStats(){
+  try{
+    const raw = sessionStorage.getItem(STORAGE_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      Object.assign(state.stats, parsed);
+    }
+  }catch(e){ /* ignore */ }
+}
+function saveStats(){
+  try{ sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state.stats)); }catch(e){}
+}
+function loadPrefs(){
+  try{
+    const raw = sessionStorage.getItem(PREFS_KEY);
+    if(raw){
+      const p = JSON.parse(raw);
+      ["wpm","freq","groupLen","farnsworth","noise","echo","mycall","mode"].forEach(k=>{
+        if(p[k] !== undefined) state[k] = p[k];
+      });
+    }
+  }catch(e){}
+}
+function savePrefs(){
+  try{
+    const p = {};
+    ["wpm","freq","groupLen","farnsworth","noise","echo","mycall","mode"].forEach(k=> p[k]=state[k]);
+    sessionStorage.setItem(PREFS_KEY, JSON.stringify(p));
+  }catch(e){}
+}
+
+/* ---------- Web Audio ---------- */
+let audioCtx = null;
+let noiseNode = null;
+let noiseGain = null;
+let playToken = 0; // permet d'annuler une lecture en cours
+
+function ensureAudio(){
+  if(!audioCtx){
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if(audioCtx.state === "suspended") audioCtx.resume();
+  return audioCtx;
+}
+
+function startNoise(){
+  if(!state.noise) return;
+  const ctx = ensureAudio();
+  if(noiseNode) return;
+  const bufferSize = 2 * ctx.sampleRate;
+  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for(let i=0;i<bufferSize;i++) data[i] = (Math.random()*2-1)*0.5;
+  noiseNode = ctx.createBufferSource();
+  noiseNode.buffer = buffer;
+  noiseNode.loop = true;
+  const bandpass = ctx.createBiquadFilter();
+  bandpass.type = "bandpass";
+  bandpass.frequency.value = state.freq;
+  bandpass.Q.value = 0.6;
+  noiseGain = ctx.createGain();
+  noiseGain.gain.value = 0.018;
+  noiseNode.connect(bandpass).connect(noiseGain).connect(ctx.destination);
+  noiseNode.start();
+}
+function stopNoise(){
+  if(noiseNode){
+    try{ noiseNode.stop(); }catch(e){}
+    noiseNode.disconnect();
+    noiseNode = null;
+  }
+}
+
+function beep(ctx, t0, dur, freq){
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = "sine";
+  osc.frequency.value = freq;
+  const attack = 0.006, release = 0.012;
+  gain.gain.setValueAtTime(0, t0);
+  gain.gain.linearRampToValueAtTime(0.32, t0 + attack);
+  gain.gain.setValueAtTime(0.32, Math.max(t0+attack, t0 + dur - release));
+  gain.gain.linearRampToValueAtTime(0, t0 + dur);
+  osc.connect(gain).connect(ctx.destination);
+  osc.start(t0);
+  osc.stop(t0 + dur + 0.002);
+}
+
+/* Timing standard morse : unité = 1.2 / WPM secondes (PARIS standard) */
+function unitDuration(wpm){ return 1.2 / wpm; }
+
+/* Construit la séquence temporelle [{type:'on'|'off', dur}] pour un texte */
+function buildTimeline(text, wpm, farnsworth){
+  const u = unitDuration(wpm);
+  // Farnsworth : on garde les éléments internes au caractère à la vitesse "wpm"
+  // mais on étire les espaces entre lettres/mots selon une vitesse plus lente.
+  let effU = u;
+  let spaceMult = 1;
+  if(farnsworth > 0){
+    const slowWpm = Math.max(3, wpm - farnsworth);
+    const slowU = unitDuration(slowWpm);
+    spaceMult = slowU / u;
+  }
+  const timeline = [];
+  const chars = text.toUpperCase().split("");
+  for(let ci=0; ci<chars.length; ci++){
+    const ch = chars[ci];
+    if(ch === " "){
+      timeline.push({type:"off", dur: effU*7*spaceMult, marker:"wordgap"});
+      continue;
+    }
+    const code = MORSE[ch];
+    if(!code) continue;
+    for(let si=0; si<code.length; si++){
+      const sym = code[si];
+      timeline.push({type:"on", dur: sym === "." ? effU : effU*3, ch});
+      if(si < code.length-1){
+        timeline.push({type:"off", dur: effU, marker:"intrachar"});
+      }
+    }
+    if(ci < chars.length-1 && chars[ci+1] !== " "){
+      timeline.push({type:"off", dur: effU*3*spaceMult, marker:"lettergap"});
+    }
+  }
+  return timeline;
+}
+
+/* Joue le texte en morse. callback(ch) appelé à chaque début de lettre si echo actif.
+   Retourne une Promise résolue à la fin (ou rejetée si annulé). */
+/* Lecture morse dédiée au mode Émission (TX) : le programme envoie lui-même
+   un indicatif en son, que l'utilisateur doit ensuite retransmettre au
+   paddle. Séparée de playMorse() (mode Réception) pour ne pas interférer
+   avec son state.playing / son oscilloscope / sa vitesse — ici on utilise
+   les réglages de la session TX (wpm, freq) et un token d'annulation propre. */
+let txPlayToken = 0;
+function playMorseTx(text, wpm, freq, onDone){
+  console.log("DBG playMorseTx msg=", text);
+  const ctx = ensureAudio();
+  const myToken = ++txPlayToken;
+  const timeline = buildTimeline(text, wpm, txState.farnsworth);
+  let t = ctx.currentTime + 0.08;
+  for(const seg of timeline){
+    if(seg.type === "on"){
+      beep(ctx, t, seg.dur, freq);
+    }
+    // On alimente aussi l'oscilloscope TX pour ce que le programme envoie,
+    // exactement comme pour la propre manipulation de l'opérateur — sans
+    // ça, le spectre ne réagissait qu'à l'émission de l'utilisateur, jamais
+    // aux réponses du programme (CQ, RST, RR...).
+    elementQueue.push({ t, dur: seg.dur, on: seg.type === "on" });
+    if(elementQueue.length > 400) elementQueue.shift();
+    t += seg.dur;
+  }
+  const totalDur = t - ctx.currentTime;
+  const doneTimer = setTimeout(() => {
+    if(txPlayToken === myToken && onDone) onDone();
+  }, totalDur*1000 + 120);
+  return {
+    cancel(){ txPlayToken++; clearTimeout(doneTimer); }
+  };
+}
+
+function playMorse(text, {onChar, onDone, onCancel} = {}){
+  const ctx = ensureAudio();
+  const myToken = ++playToken;
+  const timeline = buildTimeline(text, state.wpm, state.farnsworth);
+  let t = ctx.currentTime + 0.08;
+  let lastCh = null;
+  const visualEvents = [];
+
+  for(const seg of timeline){
+    if(seg.type === "on"){
+      beep(ctx, t, seg.dur, state.freq);
+      visualEvents.push({t, dur:seg.dur, on:true});
+      if(seg.ch && seg.ch !== lastCh){
+        lastCh = seg.ch;
+        visualEvents.push({t, char:seg.ch, charStart:true});
+      }
+    } else {
+      visualEvents.push({t, dur:seg.dur, on:false});
+    }
+    t += seg.dur;
+  }
+  const totalDur = t - ctx.currentTime;
+
+  // planifie les callbacks visuels avec setTimeout (suffisant pour UI)
+  const baseNow = performance.now();
+  const baseAudioNow = ctx.currentTime;
+  visualEvents.forEach(ev => {
+    if(ev.charStart && onChar){
+      const delayMs = (ev.t - baseAudioNow) * 1000;
+      setTimeout(() => { if(playToken === myToken) onChar(ev.char); }, Math.max(0, delayMs));
+    }
+  });
+
+  scheduleScopeEvents(visualEvents, myToken);
+
+  state.playing = true;
+  const doneTimer = setTimeout(() => {
+    if(playToken === myToken){
+      state.playing = false;
+      if(onDone) onDone();
+    }
+  }, totalDur*1000 + 120);
+
+  return {
+    cancel(){
+      playToken++; // invalide ce playback
+      clearTimeout(doneTimer);
+      state.playing = false;
+      if(onCancel) onCancel();
+    }
+  };
+}
+
+/* ============================================================
+   OSCILLOSCOPE
+   ============================================================ */
+const scopeCanvas = document.getElementById("scope");
+const scopeCtx = scopeCanvas.getContext("2d");
+let scopeDPR = window.devicePixelRatio || 1;
+let scopeQueue = []; // segments à dessiner {start, end, on}
+let scopeRafId = null;
+let scopeAnimStart = null;
+
+function resizeScope(){
+  const rect = scopeCanvas.getBoundingClientRect();
+  scopeDPR = window.devicePixelRatio || 1;
+  scopeCanvas.width = Math.round(rect.width * scopeDPR);
+  scopeCanvas.height = Math.round(rect.height * scopeDPR);
+}
+window.addEventListener("resize", resizeScope);
+
+function scheduleScopeEvents(visualEvents, token){
+  scopeQueue = visualEvents.filter(e => e.dur !== undefined).map(e => ({
+    t: e.t, dur: e.dur, on: e.on
+  }));
+  if(scopeQueue.length === 0) return;
+  const ctxNow = audioCtx.currentTime;
+  scopeAnimStart = performance.now() - ctxNow*1000;
+  if(!scopeRafId) scopeRafId = requestAnimationFrame(drawScope);
+}
+
+let scopeIdleAngle = 0;
+function drawScope(){
+  scopeRafId = requestAnimationFrame(drawScope);
+  const w = scopeCanvas.width, h = scopeCanvas.height;
+  scopeCtx.clearRect(0,0,w,h);
+
+  // grille
+  scopeCtx.strokeStyle = "rgba(95,255,176,0.06)";
+  scopeCtx.lineWidth = 1;
+  const midY = h/2;
+  scopeCtx.beginPath();
+  scopeCtx.moveTo(0, midY);
+  scopeCtx.lineTo(w, midY);
+  scopeCtx.stroke();
+  for(let gx=0; gx<w; gx+=Math.round(40*scopeDPR)){
+    scopeCtx.beginPath();
+    scopeCtx.moveTo(gx,0); scopeCtx.lineTo(gx,h);
+    scopeCtx.strokeStyle = "rgba(95,255,176,0.03)";
+    scopeCtx.stroke();
+  }
+
+  if(!state.playing || !audioCtx){
+    // ligne plate idle avec léger souffle
+    scopeIdleAngle += 0.02;
+    scopeCtx.strokeStyle = "rgba(95,255,176,0.18)";
+    scopeCtx.lineWidth = 2*scopeDPR;
+    scopeCtx.beginPath();
+    for(let x=0;x<=w;x+=4*scopeDPR){
+      const y = midY + Math.sin(x*0.02 + scopeIdleAngle)*1.5*scopeDPR;
+      if(x===0) scopeCtx.moveTo(x,y); else scopeCtx.lineTo(x,y);
+    }
+    scopeCtx.stroke();
+    if(scopeRafId && !state.playing){
+      // ralentir le rafraîchissement quand inactif
+    }
+    return;
+  }
+
+  const nowMs = performance.now();
+  const ctxNowSec = (nowMs - scopeAnimStart)/1000;
+  const windowSec = 1.4; // fenêtre visible
+  const startSec = ctxNowSec - windowSec*0.78;
+  const pxPerSec = w / windowSec;
+
+  scopeCtx.lineWidth = 2.2*scopeDPR;
+  scopeCtx.strokeStyle = "#5effb0";
+  scopeCtx.shadowColor = "rgba(95,255,176,0.55)";
+  scopeCtx.shadowBlur = 8*scopeDPR;
+  scopeCtx.beginPath();
+  let started = false;
+  const ampHigh = h*0.28;
+
+  for(const seg of scopeQueue){
+    const segStart = seg.t - startSec;
+    const segEnd = segStart + seg.dur;
+    if(segEnd < 0 || segStart > windowSec) continue;
+    const x0 = Math.max(0, segStart)*pxPerSec;
+    const x1 = Math.min(windowSec, segEnd)*pxPerSec;
+    const y = seg.on ? midY - ampHigh*0.55 : midY;
+    if(!started){ scopeCtx.moveTo(x0, midY); started = true; }
+    // transition verticale rapide
+    scopeCtx.lineTo(x0, y);
+    if(seg.on){
+      // petite oscillation sinusoïdale pour suggérer la porteuse
+      const steps = 14;
+      for(let i=0;i<=steps;i++){
+        const xx = x0 + (x1-x0)*(i/steps);
+        const yy = y + Math.sin((xx/scopeDPR)*0.9)* (h*0.07);
+        scopeCtx.lineTo(xx, yy);
+      }
+    } else {
+      scopeCtx.lineTo(x1, y);
+    }
+  }
+  scopeCtx.stroke();
+  scopeCtx.shadowBlur = 0;
+
+  // curseur de lecture
+  const cursorX = (windowSec*0.78)*pxPerSec;
+  scopeCtx.strokeStyle = "rgba(255,159,64,0.45)";
+  scopeCtx.lineWidth = 1*scopeDPR;
+  scopeCtx.beginPath();
+  scopeCtx.moveTo(cursorX, 0);
+  scopeCtx.lineTo(cursorX, h);
+  scopeCtx.stroke();
+}
+
+/* ============================================================
+   GENERATION DU CONTENU SELON LE MODE
+   ============================================================ */
+function randItem(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+function generateTarget(){
+  switch(state.mode){
+    case "calls": return randItem(CW_DATA.calls);
+    case "mots": return randItem(CW_DATA.mots);
+    case "prefix": return randItem(CW_DATA.prefix);
+    case "citations": return randItem(CW_DATA.citations);
+    case "groups": {
+      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+      let s = "";
+      for(let i=0;i<state.groupLen;i++) s += chars[Math.floor(Math.random()*chars.length)];
+      return s;
+    }
+    case "groups_letters": {
+      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      let s = "";
+      for(let i=0;i<state.groupLen;i++) s += chars[Math.floor(Math.random()*chars.length)];
+      return s;
+    }
+    case "groups_digits": {
+      const chars = "0123456789";
+      let s = "";
+      for(let i=0;i<state.groupLen;i++) s += chars[Math.floor(Math.random()*chars.length)];
+      return s;
+    }
+    default: return randItem(CW_DATA.calls);
+  }
+}
+
+/* ============================================================
+   DOM REFS
+   ============================================================ */
+const el = id => document.getElementById(id);
+const txDisplay   = el("txDisplay");
+const txSub       = el("txSub");
+const answerInput = el("answerInput");
+const feedbackLine= el("feedbackLine");
+const playBtn     = el("playBtn");
+const repeatBtn   = el("repeatBtn");
+const revealBtn   = el("revealBtn");
+const skipBtn     = el("skipBtn");
+const repeatCountRx = el("repeatCountRx");
+const repeatCounterRow = el("repeatCounterRow");
+const liveLed     = el("liveLed");
+const scopeStatus = el("scopeStatus");
+const scopeWpm    = el("scopeWpm");
+const freqReadout = el("freqReadout");
+
+const wpmSlider   = el("wpmSlider");
+const wpmVal      = el("wpmVal");
+const freqSlider  = el("freqSlider");
+const freqVal     = el("freqVal");
+const groupLenSlider = el("groupLenSlider");
+const groupLenVal    = el("groupLenVal");
+const farnsSlider = el("farnsSlider");
+const farnsVal    = el("farnsVal");
+const noiseToggle = el("noiseToggle");
+const echoToggle  = el("echoToggle");
+const mycallInput = el("mycallInput");
+const mycallDisplay = el("mycallDisplay");
+
+const statCorrect = el("statCorrect");
+const statAccuracy= el("statAccuracy");
+const statStreak  = el("statStreak");
+const statBest    = el("statBest");
+const logList     = el("logList");
+const resetStatsBtn = el("resetStatsBtn");
+
+const alphaGrid = el("alphaGrid");
+const toggleAlphaBtn = el("toggleAlphaBtn");
+const alphaPanelBody = el("alphaPanelBody");
+
+/* ============================================================
+   ALPHABET REFERENCE
+   ============================================================ */
+function buildAlphaGrid(){
+  alphaGrid.innerHTML = "";
+  ALPHA_ORDER.forEach(ch => {
+    const cell = document.createElement("div");
+    cell.className = "alpha-cell";
+    cell.id = "alpha-" + ch;
+    cell.innerHTML = `<div class="ch">${ch}</div><div class="code">${MORSE[ch]}</div>`;
+    alphaGrid.appendChild(cell);
+  });
+}
+function flashAlpha(ch){
+  const cell = document.getElementById("alpha-" + ch);
+  if(!cell) return;
+  cell.classList.add("flash");
+  setTimeout(()=> cell.classList.remove("flash"), 220);
+}
+
+let alphaCollapsed = false;
+toggleAlphaBtn.addEventListener("click", () => {
+  alphaCollapsed = !alphaCollapsed;
+  alphaPanelBody.style.display = alphaCollapsed ? "none" : "block";
+  toggleAlphaBtn.textContent = alphaCollapsed ? "Afficher ▸" : "Masquer ▾";
+});
+
+/* ============================================================
+   FLUX DE JEU
+   ============================================================ */
+let currentPlayback = null;
+
+function setModeUI(mode){
+  document.querySelectorAll(".mode-btn").forEach(b => {
+    b.classList.toggle("active", b.dataset.mode === mode);
+  });
+}
+
+function setTxDisplayText(text){
+  txDisplay.textContent = text;
+  txDisplay.classList.remove("long-text","mid-text");
+  if(text.length > 24){
+    txDisplay.classList.add("long-text");
+  } else if(text.length > 9){
+    txDisplay.classList.add("mid-text");
+  }
+}
+
+function newRound(){
+  state.currentTarget = generateTarget();
+  state.revealUsed = false;
+  state.repeatCount = 0;
+  updateRepeatCounterRx();
+  answerInput.value = "";
+  answerInput.classList.remove("correct","wrong");
+  feedbackLine.textContent = "\u00A0";
+  feedbackLine.className = "feedback-line";
+  setTxDisplayText("PRÊT");
+  txDisplay.classList.remove("revealed");
+  txSub.textContent = modeSubtitle();
+}
+
+/* Compteur de réécoutes RX : incrémenté à chaque fois que la cible en
+   cours (indicatif, mot, groupe...) est rejouée via "Répéter", "RPT" ou
+   le raccourci Espace — jamais sur la toute première lecture. Remis à
+   zéro à chaque nouvelle cible (newRound). */
+function updateRepeatCounterRx(){
+  repeatCountRx.textContent = state.repeatCount;
+  repeatCounterRow.classList.toggle("rc-active", state.repeatCount > 0);
+}
+
+function modeSubtitle(){
+  switch(state.mode){
+    case "calls": return "Copiez l'indicatif radioamateur transmis";
+    case "mots": return "Copiez le mot français transmis";
+    case "prefix": return "Copiez le préfixe pays transmis";
+    case "citations": return "Copiez la citation transmise (phrase complète)";
+    case "groups": return `Copiez le groupe aléatoire de ${state.groupLen} caractères`;
+    case "groups_letters": return `Copiez le groupe de ${state.groupLen} lettres`;
+    case "groups_digits": return `Copiez le groupe de ${state.groupLen} chiffres`;
+  }
+}
+
+function startPlayback(text){
+  if(currentPlayback) currentPlayback.cancel();
+  ensureAudio();
+  startNoise();
+  liveLed.classList.add("live");
+  scopeStatus.textContent = "EN TRANSMISSION";
+  playBtn.disabled = true;
+  repeatBtn.disabled = true;
+  currentPlayback = playMorse(text, {
+    onChar: (ch) => {
+      flashAlpha(ch);
+    },
+    onDone: () => {
+      liveLed.classList.remove("live");
+      scopeStatus.textContent = "EN ATTENTE";
+      playBtn.disabled = false;
+      repeatBtn.disabled = false;
+      currentPlayback = null;
+    },
+    onCancel: () => {
+      liveLed.classList.remove("live");
+      scopeStatus.textContent = "INTERROMPU";
+      playBtn.disabled = false;
+      repeatBtn.disabled = false;
+    }
+  });
+}
+
+playBtn.addEventListener("click", () => {
+  if(!state.currentTarget) newRound();
+  startPlayback(state.currentTarget);
+  answerInput.focus();
+});
+
+function repeatCurrentTarget(){
+  if(!state.currentTarget) return;
+  state.repeatCount++;
+  updateRepeatCounterRx();
+  startPlayback(state.currentTarget);
+}
+
+repeatBtn.addEventListener("click", repeatCurrentTarget);
+
+revealBtn.addEventListener("click", () => {
+  revealAnswer();
+});
+
+function revealAnswer(){
+  if(!state.currentTarget) return;
+  state.revealUsed = true;
+  setTxDisplayText(state.currentTarget);
+  txDisplay.classList.add("revealed");
+}
+
+skipBtn.addEventListener("click", () => {
+  if(currentPlayback) currentPlayback.cancel();
+  newRound();
+});
+
+function normalize(s){
+  return s.trim().toUpperCase().replace(/\s+/g," ");
+}
+
+function submitAnswer(){
+  if(!state.currentTarget) return;
+  const guess = normalize(answerInput.value);
+  const target = normalize(state.currentTarget);
+  if(guess.length === 0) return;
+
+  const isCorrect = guess === target && !state.revealUsed;
+  state.stats.total++;
+  if(isCorrect){
+    state.stats.correct++;
+    state.stats.streak++;
+    state.stats.best = Math.max(state.stats.best, state.stats.streak);
+    answerInput.classList.add("correct");
+    feedbackLine.textContent = "✓ Copié correctement";
+    feedbackLine.className = "feedback-line ok";
+  } else {
+    state.stats.streak = 0;
+    answerInput.classList.add("wrong");
+    feedbackLine.textContent = `✗ Réponse : ${state.currentTarget}`;
+    feedbackLine.className = "feedback-line bad";
+  }
+  pushLog(target, guess, isCorrect);
+  renderStats();
+  saveStats();
+  setTxDisplayText(state.currentTarget);
+  txDisplay.classList.add("revealed");
+
+  setTimeout(() => { newRound(); answerInput.focus(); }, 1100);
+}
+
+function pushLog(target, guess, ok){
+  state.stats.log.unshift({target, guess, ok});
+  state.stats.log = state.stats.log.slice(0, 12);
+}
+
+function renderStats(){
+  statCorrect.textContent = state.stats.correct;
+  const acc = state.stats.total ? Math.round(100*state.stats.correct/state.stats.total) : null;
+  statAccuracy.textContent = acc === null ? "—" : acc + "%";
+  statStreak.textContent = state.stats.streak;
+  statBest.textContent = state.stats.best;
+
+  logList.innerHTML = "";
+  state.stats.log.forEach(entry => {
+    const row = document.createElement("div");
+    row.className = "log-row " + (entry.ok ? "ok" : "bad");
+    const shortTarget = entry.target.length > 28 ? entry.target.slice(0,26) + "…" : entry.target;
+    const shortGuess = (entry.guess || "—");
+    const shortGuessTrim = shortGuess.length > 18 ? shortGuess.slice(0,16) + "…" : shortGuess;
+    row.innerHTML = `<span class="a">${shortTarget}</span><span class="b">${entry.ok ? "✓" : shortGuessTrim}</span>`;
+    logList.appendChild(row);
+  });
+}
+
+resetStatsBtn.addEventListener("click", () => {
+  state.stats = { correct:0, total:0, streak:0, best:0, log:[] };
+  renderStats();
+  saveStats();
+});
+
+/* ---------- Entrées clavier ---------- */
+answerInput.addEventListener("keydown", (e) => {
+  if(e.key === "Enter"){
+    e.preventDefault();
+    submitAnswer();
+  } else if(e.key === "Tab"){
+    e.preventDefault();
+    revealAnswer();
+  }
+});
+document.addEventListener("keydown", (e) => {
+  if(e.code === "Space" && document.activeElement !== answerInput){
+    e.preventDefault();
+    repeatBtn.click();
+  }
+});
+
+/* ---------- Modes ---------- */
+document.querySelectorAll(".mode-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    state.mode = btn.dataset.mode;
+    setModeUI(state.mode);
+    if(currentPlayback) currentPlayback.cancel();
+    newRound();
+    savePrefs();
+  });
+});
+
+/* ---------- Réglages ---------- */
+function syncSliderLabels(){
+  wpmVal.textContent = state.wpm + " WPM";
+  freqVal.textContent = state.freq + " Hz";
+  freqReadout.textContent = state.freq + " Hz";
+  scopeWpm.textContent = state.wpm + " WPM";
+  groupLenVal.textContent = state.groupLen;
+  farnsVal.textContent = state.farnsworth === 0 ? "Désactivé" : ("-" + state.farnsworth + " WPM");
+}
+
+wpmSlider.addEventListener("input", () => {
+  state.wpm = parseInt(wpmSlider.value,10);
+  syncSliderLabels();
+  savePrefs();
+});
+freqSlider.addEventListener("input", () => {
+  state.freq = parseInt(freqSlider.value,10);
+  syncSliderLabels();
+  if(noiseNode){
+    stopNoise(); startNoise();
+  }
+  savePrefs();
+});
+groupLenSlider.addEventListener("input", () => {
+  state.groupLen = parseInt(groupLenSlider.value,10);
+  syncSliderLabels();
+  savePrefs();
+  if(state.mode === "groups" || state.mode === "groups_letters" || state.mode === "groups_digits") txSub.textContent = modeSubtitle();
+});
+farnsSlider.addEventListener("input", () => {
+  state.farnsworth = parseInt(farnsSlider.value,10);
+  syncSliderLabels();
+  savePrefs();
+});
+noiseToggle.addEventListener("change", () => {
+  state.noise = noiseToggle.checked;
+  if(state.noise) startNoise(); else stopNoise();
+  savePrefs();
+});
+echoToggle.addEventListener("change", () => {
+  state.echo = echoToggle.checked;
+  savePrefs();
+});
+mycallInput.addEventListener("input", () => {
+  state.mycall = mycallInput.value.toUpperCase();
+  mycallDisplay.textContent = state.mycall || "—";
+  savePrefs();
+});
+
+/* ============================================================
+   MODULE KEYER — Manipulation / Émission (TX)
+   ============================================================ */
+const REVERSE_MORSE = {};
+Object.entries(MORSE).forEach(([ch, code]) => { REVERSE_MORSE[code] = ch; });
+
+const txState = {
+  active: false,
+  keyerMode: "straight",   // straight | iambic-a | iambic-b
+  paddleSource: "keyboard", // keyboard | bridge
+  wpm: 18,
+  listenWpm: 18,           // vitesse du son envoyé PAR le programme (CQ, RR, indicatifs...) — indépendante de la vitesse de manipulation au paddle
+  freq: 700,
+  farnsworth: 0,
+  ditKeyCode: "ControlLeft",
+  dahKeyCode: "ControlRight",
+  ditKeyLabel: "Ctrl G",
+  dahKeyLabel: "Ctrl D",
+  swapPaddles: false,
+  txMode: "free",          // free | calls | mots | groups
+  target: "",
+  capturing: null,         // "dit" | "dah" | null pendant la capture d'une touche
+  stats: { correct:0, total:0, bestStreak:0, streak:0 },
+  sessionLen: 10,          // nombre d'essais voulu par session (réglage persistant)
+  session: { done: 0, correct: 0, active: false }, // progression de la session en cours
+  repeatCount: 0,          // nombre de réécoutes demandées sur l'échange/la cible en cours
+  groupLog: [],            // historique des cibles (groupes/indicatifs/mots) déjà envoyées dans la session guidée en cours
+};
+const TX_PREFS_KEY = "rxcw_txprefs_v1";
+const TX_STATS_KEY = "rxcw_txstats_v1";
+
+function loadTxPrefs(){
+  try{
+    const raw = sessionStorage.getItem(TX_PREFS_KEY);
+    if(raw){
+      const p = JSON.parse(raw);
+      ["keyerMode","paddleSource","wpm","listenWpm","freq","farnsworth","ditKeyCode","dahKeyCode","ditKeyLabel","dahKeyLabel","swapPaddles","txMode","sessionLen"].forEach(k=>{
+        if(p[k] !== undefined) txState[k] = p[k];
+      });
+    }
+  }catch(e){}
+}
+function saveTxPrefs(){
+  try{
+    const p = {};
+    ["keyerMode","paddleSource","wpm","listenWpm","freq","farnsworth","ditKeyCode","dahKeyCode","ditKeyLabel","dahKeyLabel","swapPaddles","txMode","sessionLen"].forEach(k=> p[k]=txState[k]);
+    sessionStorage.setItem(TX_PREFS_KEY, JSON.stringify(p));
+  }catch(e){}
+}
+function loadTxStats(){
+  try{
+    const raw = sessionStorage.getItem(TX_STATS_KEY);
+    if(raw) Object.assign(txState.stats, JSON.parse(raw));
+  }catch(e){}
+}
+function saveTxStats(){
+  try{ sessionStorage.setItem(TX_STATS_KEY, JSON.stringify(txState.stats)); }catch(e){}
+}
+
+/* ---------- Oscillateur continu pour le retour sonore ---------- */
+let txOsc = null, txGain = null;
+function txToneOn(){
+  const ctx = ensureAudio();
+  if(txOsc) return;
+  txOsc = ctx.createOscillator();
+  txGain = ctx.createGain();
+  txOsc.type = "sine";
+  txOsc.frequency.value = txState.freq;
+  txGain.gain.value = 0;
+  txOsc.connect(txGain).connect(ctx.destination);
+  txOsc.start();
+  const t = ctx.currentTime;
+  txGain.gain.setValueAtTime(0, t);
+  txGain.gain.linearRampToValueAtTime(0.32, t + 0.006);
+}
+function txToneOff(){
+  if(!txOsc) return;
+  const ctx = ensureAudio();
+  const t = ctx.currentTime;
+  txGain.gain.setValueAtTime(txGain.gain.value, t);
+  txGain.gain.linearRampToValueAtTime(0, t + 0.012);
+  const osc = txOsc, gain = txGain;
+  txOsc = null; txGain = null;
+  setTimeout(()=>{ try{ osc.stop(); osc.disconnect(); gain.disconnect(); }catch(e){} }, 40);
+}
+
+/* ---------- Element timing & decode ---------- */
+let elementQueue = [];     // {on:bool, t, dur} pour le scope TX
+let currentLetterBuffer = ""; // suite de . et - en cours
+let decodedHistory = "";      // texte complet décodé depuis la dernière "nouvelle cible"
+let letterGapTimer = null;
+let wordGapTimer = null;
+let pressStartTime = 0;
+let isPressed = { dit:false, dah:false };
+let keyerRunning = false;
+let keyerLoopHandle = null;
+let lastElementWasDah = false; // pour alternance iambique
+let straightPressStart = 0;
+let straightActiveKey = null;
+
+function txUnit(){ return 1.2 / txState.wpm; }
+
+function txScopePush(on, dur){
+  const ctx = ensureAudio();
+  elementQueue.push({ t: ctx.currentTime, dur, on });
+  // garder une fenêtre raisonnable
+  if(elementQueue.length > 400) elementQueue.shift();
+}
+
+function appendElement(sym){
+  // sym: "." ou "-"
+  currentLetterBuffer += sym;
+  // Un nouvel élément vient d'être décidé : on annule tout minuteur de fin
+  // de lettre/mot en attente, ce n'était qu'une fausse alerte. Le vrai
+  // minuteur ne sera réarmé que par scheduleLetterGap(), au moment précis
+  // où le moteur Iambique constate qu'il n'y a plus rien à jouer.
+  clearTimeout(letterGapTimer);
+  clearTimeout(wordGapTimer);
+}
+
+function finalizeLetter(){
+  if(!currentLetterBuffer) return;
+  const ch = REVERSE_MORSE[currentLetterBuffer] || "?";
+  decodedHistory += ch;
+  currentLetterBuffer = "";
+  updateDecodedDisplay();
+  flashAlpha(ch === "?" ? "" : ch);
+  const u = txUnit();
+  wordGapTimer = setTimeout(()=>{
+    if(!decodedHistory.endsWith(" ")){
+      decodedHistory += " ";
+      updateDecodedDisplay();
+    }
+  }, u * 7 * 1000);
+  // Validation automatique en mode guidé : on regarde les N derniers
+  // caractères décodés (N = longueur de la cible), pas tout l'historique
+  // accumulé depuis le début — comme ça, si une erreur de manipulation
+  // arrive au milieu, on peut directement reprendre le groupe depuis le
+  // début (en re-manipulant N nouveaux caractères à la suite, sans pause
+  // ni clic sur quoi que ce soit) et le programme valide dès que ces N
+  // derniers caractères correspondent à la cible.
+  // "RPT" manipulé au paddle : redemande la réécoute complète de la
+  // séquence en cours, exactement comme un clic sur le bouton RPT — utile
+  // pour rester dans le rythme du trafic sans lâcher le paddle. Priorité
+  // sur la validation automatique et les autres commandes (AGN?/NR?), et
+  // on vide le buffer pour ne pas fausser la suite.
+  if(txState.txMode !== "free"){
+    const bufCheck = decodedHistory.replace(/\s+/g, "").toUpperCase();
+    if(bufCheck.endsWith("RPT")){
+      clearTimeout(wordGapTimer);
+      decodedHistory = "";
+      currentLetterBuffer = "";
+      updateDecodedDisplay();
+      performTxRpt();
+      return;
+    }
+  }
+  if(txState.txMode !== "free" && txState.target){
+    const targetUp = txState.target.trim().toUpperCase();
+    const tail = decodedHistory.trim().toUpperCase().slice(-targetUp.length);
+    if(tail === targetUp){
+      clearTimeout(wordGapTimer);
+      checkTxAnswer();
+    }
+  }
+  if(txState.txMode === "contest"){
+    contestCheckBuffer();
+  }
+  if(txState.txMode === "qso"){
+    qsoCheckBuffer();
+  }
+  if(txState.txMode === "qso_fr"){
+    qsoFrCheckBuffer();
+  }
+}
+
+function updateDecodedDisplay(){
+  decodedText.textContent = decodedHistory || "\u00A0";
+}
+
+/* ---------- Réception directe d'un caractère déjà décodé (pont Winkeyer) ----------
+   Le Winkeyer décode lui-même le morse en ASCII côté matériel ; le pont nous
+   transmet la lettre finale, pas des points/traits bruts. On l'intègre donc
+   directement à l'historique sans repasser par le décodeur point/trait. */
+function appendDecodedChar(ch){
+  clearTimeout(wordGapTimer);
+  if(ch === " "){
+    if(!decodedHistory.endsWith(" ")) decodedHistory += " ";
+  } else {
+    decodedHistory += ch;
+    flashAlpha(ch);
+  }
+  updateDecodedDisplay();
+}
+function appendBackspace(){
+  decodedHistory = decodedHistory.slice(0, -1);
+  updateDecodedDisplay();
+}
+
+/* ---------- Manipulateur simple (straight key) ----------
+   Appui court => point, appui long => trait, basé sur la durée de pression
+   mesurée par rapport à l'unité courante. */
+function straightPress(){
+  straightPressStart = performance.now();
+  clearTimeout(letterGapTimer);
+  clearTimeout(wordGapTimer);
+  txToneOn();
+  scopeTxStatus.textContent = "ÉMISSION";
+  txScopePush(true, 999); // durée provisoire, corrigée au relâchement
+}
+function straightRelease(){
+  const heldMs = performance.now() - straightPressStart;
+  txToneOff();
+  scopeTxStatus.textContent = "PADDLE AU REPOS";
+  const u = txUnit()*1000;
+  // corrige le dernier segment poussé avec la vraie durée
+  if(elementQueue.length){
+    elementQueue[elementQueue.length-1].dur = heldMs/1000;
+  }
+  const sym = heldMs < u*1.8 ? "." : "-";
+  appendElement(sym);
+  scheduleLetterGap();
+  // espace après l'élément (off) pour le scope
+  txScopePush(false, u*1.2/1000);
+}
+
+/* ---------- Iambique ----------
+   Modèle conforme à un vrai keyer électronique : chaque appui de paddle est
+   mémorisé dès qu'il survient, même s'il arrive pendant qu'un autre élément
+   est en train de sonner. La décision du prochain élément se prend toujours
+   à la fin de l'élément courant, en lisant l'état réel à CET instant (paddle
+   encore enfoncé OU mémoire armée) — jamais un état figé au moment du
+   lancement. C'est ce qui évite de perdre des appuis rapides.
+   La mémoire est une vraie FILE D'ATTENTE ordonnée (FIFO), pas deux simples
+   compteurs séparés : si DAH puis DIT arrivent coup sur coup avant que le
+   moteur n'ait fini de jouer l'élément précédent, on doit les rejouer DANS
+   CET ORDRE (DAH puis DIT) — pas deviner via une alternance arbitraire,
+   sinon une lettre comme "G" (DAH DAH DIT) pourrait perdre son point final
+   au profit d'un trait. */
+let memoryQueue = []; // file ordonnée de "dit"/"dah"/"BREAK" en attente de lecture
+let iambicToken = 0;
+let lastPhysicalReleaseTime = 0; // horodatage du dernier VRAI relâchement physique (keyup)
+
+function armMemoryOnPress(which){
+  const u = txUnit();
+  // Si ce nouvel appui PHYSIQUE arrive après un vrai silence d'au moins 3
+  // unités depuis le DERNIER RELÂCHEMENT PHYSIQUE (pas depuis le dernier
+  // élément réellement joué par le moteur, qui peut être très en retard
+  // sur le rythme de frappe réel lors d'une rafale rapide), c'est le début
+  // d'une nouvelle lettre. On insère un marqueur de coupure ("BREAK") dans
+  // la file pour que le moteur sache qu'il doit finaliser la lettre
+  // courante avant de jouer cet élément.
+  if(lastPhysicalReleaseTime > 0 && (performance.now() - lastPhysicalReleaseTime) >= u*3*1000){
+    memoryQueue.push("BREAK");
+  }
+  memoryQueue.push(which);
+}
+
+function startIambicLoop(){
+  if(keyerRunning) return; // une boucle tourne déjà, elle relira l'état à chaque fin d'élément
+  keyerRunning = true;
+  iambicStep();
+}
+function stopIambicLoopIfIdle(){
+  if(!isPressed.dit && !isPressed.dah){
+    keyerRunning = false;
+    clearTimeout(keyerLoopHandle);
+  }
+}
+function iambicStep(){
+  const myToken = ++iambicToken;
+  const u = txUnit();
+
+  // Un marqueur de coupure de lettre est en tête de file : un vrai silence
+  // d'au moins 3 unités a été détecté entre les manipulations, même si le
+  // moteur n'a pas fini de jouer tous les éléments en attente (rafale plus
+  // rapide que la restitution). On finalise la lettre courante MAINTENANT,
+  // avant de continuer avec le reste de la file.
+  while(memoryQueue[0] === "BREAK"){
+    memoryQueue.shift();
+    finalizeLetter();
+  }
+
+  const wantDit = isPressed.dit || memoryQueue.includes("dit");
+  const wantDah = isPressed.dah || memoryQueue.includes("dah");
+
+  if(!wantDit && !wantDah){
+    keyerRunning = false;
+    return;
+  }
+
+  let playDah;
+  if(isPressed.dit && isPressed.dah){
+    // Vrai squeeze : les DEUX paddles sont physiquement enfoncés EN MÊME
+    // TEMPS maintenant — on alterne, comportement Iambique standard.
+    playDah = !lastElementWasDah;
+  } else if(memoryQueue.length > 0){
+    // Au moins un appui est en file d'attente : on joue le plus ancien
+    // (FIFO), dans l'ordre exact où l'opérateur l'a manipulé.
+    playDah = (memoryQueue.shift() === "dah");
+  } else {
+    playDah = wantDah;
+  }
+  lastElementWasDah = playDah;
+
+  const dur = playDah ? u*3 : u;
+  const sym = playDah ? "-" : ".";
+
+  // On ajoute le symbole au buffer ET on réarme le timer de fin de lettre
+  // DÈS MAINTENANT (avant même que le son ne soit joué), pas après la fin
+  // de sa durée. Sinon, pour un trait (200ms à 18 WPM), le timer de fin de
+  // lettre (qui doit rester court pour rester réactif aux vraies pauses)
+  // pourrait expirer pendant que ce trait est encore en train d'être joué,
+  // coupant la lettre en plein milieu d'une séquence légitime comme "O".
+  appendElement(sym);
+
+  txToneOn();
+  scopeTxStatus.textContent = "ÉMISSION";
+  txScopePush(true, dur);
+
+  keyerLoopHandle = setTimeout(() => {
+    if(myToken !== iambicToken) return;
+    txToneOff();
+    txScopePush(false, u);
+
+    // Court silence inter-élément (1 unité) — pendant ce temps, tout nouvel
+    // appui arme la mémoire via armMemoryOnPress, donc rien n'est perdu même
+    // si le check ci-dessous tombe juste avant que l'utilisateur n'appuie.
+    keyerLoopHandle = setTimeout(() => {
+      if(myToken !== iambicToken) return;
+      const stillWant = isPressed.dit || isPressed.dah || memoryQueue.length > 0;
+      scopeTxStatus.textContent = stillWant ? "ÉMISSION" : "PADDLE AU REPOS";
+      if(stillWant){
+        iambicStep();
+      } else if(txState.keyerMode === "iambic-b" && pendingComplementB){
+        pendingComplementB = false;
+        const compDah = !lastElementWasDah;
+        lastElementWasDah = compDah;
+        const cdur = compDah ? u*3 : u;
+        const csym = compDah ? "-" : ".";
+        appendElement(csym);
+        txToneOn();
+        txScopePush(true, cdur);
+        setTimeout(()=>{
+          txToneOff();
+          txScopePush(false, u);
+          scheduleLetterGap();
+        }, cdur*1000);
+      } else {
+        keyerRunning = false;
+        // Plus aucun élément en vue à cet instant précis (1 unité de
+        // silence déjà écoulée depuis la fin du dernier élément) : c'est
+        // le bon moment pour armer le timer de fin de lettre, qui ne sera
+        // basé que sur un VRAI silence observé, jamais sur la durée
+        // théorique d'un futur élément hypothétique.
+        scheduleLetterGap();
+      }
+    }, u*1000);
+  }, dur*1000);
+}
+function scheduleLetterGap(){
+  clearTimeout(letterGapTimer);
+  clearTimeout(wordGapTimer);
+  const u = txUnit();
+  // 1 unité de silence est déjà passée à cet instant (cf. ci-dessus) ; le
+  // standard morse veut 3 unités de silence pour une fin de lettre, donc
+  // encore environ 2 unités à attendre. On reste un peu permissif (1.8u)
+  // pour absorber les petites irrégularités de frappe.
+  letterGapTimer = setTimeout(finalizeLetter, u * 1.8 * 1000);
+}
+let pendingComplementB = false;
+
+/* Si un relâchement (keyup) venant du matériel est perdu pour une raison
+   quelconque (firmware de paddle capricieux, driver USB, perte de focus),
+   isPressed[which] resterait bloqué à "true" pour toujours et tout nouvel
+   appui serait silencieusement ignoré. Pour éviter ce blocage permanent, on
+   horodate chaque appui et on tolère un nouveau "press" si le précédent est
+   resté actif sans relâchement pendant un temps anormalement long. */
+const PADDLE_STUCK_TIMEOUT_MS = 1500;
+let pressTimestamp = { dit: 0, dah: 0 };
+
+function pressPaddle(which){
+  const now = performance.now();
+  if(isPressed[which]){
+    if(now - pressTimestamp[which] < PADDLE_STUCK_TIMEOUT_MS) return;
+    // L'appui précédent traîne depuis trop longtemps sans relâchement reçu :
+    // on considère qu'un keyup a été manqué et on force une remise à zéro
+    // avant de traiter ce press comme un nouveau cycle.
+    forceReleasePaddle(which);
+  }
+  isPressed[which] = true;
+  pressTimestamp[which] = now;
+  // Note : on n'annule PAS letterGapTimer/wordGapTimer ici. Ce nouvel appui
+  // sera pris en compte par le prochain cycle (armMemoryOnPress ou
+  // straightPress), mais le minuteur de fin de lettre en cours, s'il y en a
+  // un, doit pouvoir continuer à courir et déclencher légitimement la
+  // séparation entre deux lettres distinctes. C'est appendElement() (au
+  // moment où l'élément est vraiment décidé et joué) qui se charge
+  // d'annuler ce minuteur, pas le simple fait de toucher le paddle.
+  if(txState.keyerMode === "straight"){
+    // en manipulateur simple, n'importe quelle touche assignée (dit ou dah) agit comme la touche unique
+    if(!straightActiveKey){
+      straightActiveKey = which;
+      straightPress();
+    }
+    return;
+  }
+  armMemoryOnPress(which);
+  if(txState.keyerMode === "iambic-b" && keyerRunning){
+    pendingComplementB = true;
+  }
+  startIambicLoop();
+}
+function forceReleasePaddle(which){
+  isPressed[which] = false;
+  memoryQueue = memoryQueue.filter(w => w !== which);
+  iambicToken++; // invalide tout cycle iambique en cours basé sur l'ancien état
+  clearTimeout(keyerLoopHandle);
+  keyerRunning = false;
+  txToneOff();
+  if(txState.keyerMode === "straight" && straightActiveKey === which){
+    straightActiveKey = null;
+    scopeTxStatus.textContent = "PADDLE AU REPOS";
+  }
+}
+function releasePaddle(which){
+  if(!isPressed[which]) return;
+  isPressed[which] = false;
+  lastPhysicalReleaseTime = performance.now();
+  if(txState.keyerMode === "straight"){
+    if(straightActiveKey === which){
+      straightActiveKey = null;
+      straightRelease();
+    }
+    return;
+  }
+  // en iambique la boucle se termine naturellement (iambicStep relit isPressed)
+}
+
+/* ---------- Liaison clavier physique / paddle USB-HID ---------- */
+
+function matchesKey(e, code, label){
+  return e.code === code || e.key.toUpperCase() === label.toUpperCase();
+}
+
+/* Anti-rebond (debounce) : certains paddles/contacts physiques (notamment
+   un Digispark mal isolé) génèrent un cycle keydown/keyup électrique
+   parasite ultra-bref ("contact bounce") juste avant le vrai signal d'un
+   appui volontaire. Ce rebond dure typiquement moins de 10ms — bien en
+   dessous du temps minimum qu'un doigt humain met à actionner un contact
+   (15-20ms même pour un appui très rapide et volontaire).
+   Stratégie : on ne traite PAS le keydown immédiatement. On attend
+   BOUNCE_GUARD_MS ; si la touche est encore enfoncée à ce moment (pas de
+   keyup reçu dans l'intervalle), c'est un vrai appui et on déclenche
+   pressPaddle. Si un keyup arrive avant la fin de ce court délai, c'était
+   un rebond et on l'ignore entièrement (aucun élément joué). Ça distingue
+   rebond et vraie pause volontaire par la DURÉE du signal lui-même,
+   plutôt que par l'espacement entre deux signaux (qui peut être aussi
+   bref pour les deux cas chez un opérateur rapide). */
+const BOUNCE_GUARD_MS = 12;
+let pendingPress = { dit: null, dah: null };
+let physicallyDown = { dit: false, dah: false };
+
+document.addEventListener("keydown", (e) => {
+  if(!txState.active) return;
+  if(document.activeElement && (document.activeElement.tagName === "INPUT")) return;
+  if(txState.capturing) return; // pendant la capture on n'agit pas comme paddle
+
+  let role = null;
+  if(matchesKey(e, txState.ditKeyCode, txState.ditKeyLabel)) role = "dit";
+  else if(matchesKey(e, txState.dahKeyCode, txState.dahKeyLabel)) role = "dah";
+  if(!role) return;
+  e.preventDefault();
+  const effRole = txState.swapPaddles ? (role === "dit" ? "dah" : "dit") : role;
+
+  if(physicallyDown[effRole]) return; // déjà en attente ou déjà pressé : ignore (auto-répétition)
+  physicallyDown[effRole] = true;
+  // On annule IMMÉDIATEMENT les timers de fin de lettre/mot, avant même le
+  // délai de garde anti-rebond : sinon, si letterGapTimer arrivait à
+  // échéance pendant ces quelques ms d'attente, la lettre se terminerait
+  // par erreur avant que pressPaddle() n'ait eu la chance de l'annuler.
+  clearTimeout(letterGapTimer);
+  clearTimeout(wordGapTimer);
+  pendingPress[effRole] = setTimeout(() => {
+    pendingPress[effRole] = null;
+    if(!physicallyDown[effRole]) return; // un keyup est arrivé pendant l'attente : c'était un rebond
+    setKeyVisual(effRole, true);
+    pressPaddle(effRole);
+  }, BOUNCE_GUARD_MS);
+});
+document.addEventListener("keyup", (e) => {
+  if(!txState.active) return;
+  let role = null;
+  if(matchesKey(e, txState.ditKeyCode, txState.ditKeyLabel)) role = "dit";
+  else if(matchesKey(e, txState.dahKeyCode, txState.dahKeyLabel)) role = "dah";
+  if(!role) return;
+  const effRole = txState.swapPaddles ? (role === "dit" ? "dah" : "dit") : role;
+
+  physicallyDown[effRole] = false;
+  if(pendingPress[effRole] !== null){
+    // Le keyup arrive avant la fin du délai de garde : rebond ultra-bref,
+    // on annule simplement l'appui en attente sans jamais avoir joué quoi
+    // que ce soit ni mis à jour l'affichage.
+    clearTimeout(pendingPress[effRole]);
+    pendingPress[effRole] = null;
+    return;
+  }
+  // Le keydown avait déjà été validé comme un vrai appui (délai écoulé) :
+  // on relâche normalement.
+  if(!isPressed[effRole]) return;
+  setKeyVisual(effRole, false);
+  releasePaddle(effRole);
+});
+
+function setKeyVisual(which, pressed){
+  const node = which === "dit" ? ditKey : dahKey;
+  node.classList.toggle("pressed", pressed);
+}
+
+/* ---------- Boutons tactiles / souris ---------- */
+function bindPointerPaddle(node, which){
+  const down = (ev) => { ev.preventDefault(); setKeyVisual(which,true); pressPaddle(which); };
+  const up   = (ev) => { ev.preventDefault(); setKeyVisual(which,false); releasePaddle(which); };
+  node.addEventListener("mousedown", down);
+  node.addEventListener("touchstart", down, {passive:false});
+  ["mouseup","mouseleave"].forEach(evt => node.addEventListener(evt, up));
+  node.addEventListener("touchend", up);
+  node.addEventListener("touchcancel", up);
+}
+
+/* ---------- Capture de touche pour reconfigurer le paddle ---------- */
+function startKeyCapture(which, btn){
+  txState.capturing = which;
+  btn.classList.add("listening");
+  btn.textContent = "…";
+  const handler = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    txState.capturing = null;
+    btn.classList.remove("listening");
+    const label = e.key.length === 1 ? e.key.toUpperCase() : e.code;
+    if(which === "dit"){ txState.ditKeyCode = e.code; txState.ditKeyLabel = label; }
+    else { txState.dahKeyCode = e.code; txState.dahKeyLabel = label; }
+    refreshKeyLabels();
+    saveTxPrefs();
+    document.removeEventListener("keydown", handler, true);
+  };
+  document.addEventListener("keydown", handler, true);
+}
+function refreshKeyLabels(){
+  captureDitBtn.textContent = displayKeyLabel(txState.ditKeyCode, txState.ditKeyLabel);
+  captureDahBtn.textContent = displayKeyLabel(txState.dahKeyCode, txState.dahKeyLabel);
+  kbdDitHint.textContent = displayKeyLabel(txState.ditKeyCode, txState.ditKeyLabel);
+  kbdDahHint.textContent = displayKeyLabel(txState.dahKeyCode, txState.dahKeyLabel);
+  updateKbdHintText();
+}
+const KEY_DISPLAY_MAP = {
+  ArrowLeft: "←", ArrowRight: "→", ArrowUp: "↑", ArrowDown: "↓",
+  Space: "Espace", Enter: "Entrée", Tab: "Tab",
+  ShiftLeft: "Maj G", ShiftRight: "Maj D",
+  ControlLeft: "Ctrl G", ControlRight: "Ctrl D",
+  AltLeft: "Alt G", AltRight: "Alt D",
+};
+function displayKeyLabel(code, fallbackLabel){
+  if(KEY_DISPLAY_MAP[code]) return KEY_DISPLAY_MAP[code];
+  return fallbackLabel;
+}
+function updateKbdHintText(){
+  const ditDisp = displayKeyLabel(txState.ditKeyCode, txState.ditKeyLabel);
+  const dahDisp = displayKeyLabel(txState.dahKeyCode, txState.dahKeyLabel);
+  if(txState.keyerMode === "straight"){
+    kbdHintFull.innerHTML = `Touche : <kbd id="kbdDitHint">${ditDisp}</kbd> ou <kbd id="kbdDahHint">${dahDisp}</kbd> — court = point, long = trait`;
+  } else {
+    kbdHintFull.innerHTML = `Paddle : <kbd id="kbdDitHint">${ditDisp}</kbd> point · <kbd id="kbdDahHint">${dahDisp}</kbd> trait · les deux ensemble = alternance`;
+  }
+}
+
+/* ---------- TX target generation (modes guidés) ---------- */
+function generateTxTarget(){
+  switch(txState.txMode){
+    case "calls": return randItem(CW_DATA.calls);
+    case "mots": return randItem(CW_DATA.mots);
+    case "groups": {
+      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+      let s = "";
+      for(let i=0;i<5;i++) s += chars[Math.floor(Math.random()*chars.length)];
+      return s;
+    }
+    case "groups_letters": {
+      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      let s = "";
+      for(let i=0;i<5;i++) s += chars[Math.floor(Math.random()*chars.length)];
+      return s;
+    }
+    case "groups_digits": {
+      const chars = "0123456789";
+      let s = "";
+      for(let i=0;i<5;i++) s += chars[Math.floor(Math.random()*chars.length)];
+      return s;
+    }
+    default: return "";
+  }
+}
+function newTxRound(){
+  decodedHistory = "";
+  currentLetterBuffer = "";
+  clearTimeout(letterGapTimer);
+  clearTimeout(wordGapTimer);
+  clearTimeout(contestState.reportTimer);
+  clearTimeout(qsoState.stepTimer);
+  clearTimeout(qsoFrState.stepTimer);
+  qsoMsgRevealed = false;
+  updateDecodedDisplay();
+  txFeedbackLine.textContent = "\u00A0";
+  txFeedbackLine.className = "feedback-line";
+  txState.repeatCount = 0;
+  updateRepeatCounterTx();
+  updateTxControlsForMode();
+  if(txState.txMode === "free"){
+    txState.target = "";
+    txTargetDisplay.textContent = "MANIP LIBRE";
+    txTargetSub.textContent = "Manipulez librement — tout ce que vous envoyez sera décodé ci-dessus";
+  } else if(txState.txMode === "contest"){
+    startContestRound();
+  } else if(txState.txMode === "qso"){
+    startQsoRound();
+  } else if(txState.txMode === "qso_fr"){
+    startQsoFrRound();
+  } else {
+    txState.target = generateTxTarget();
+    txState.groupLog.push(txState.target);
+    txTargetDisplay.textContent = "?";
+    const progress = txState.session.active ? ` (essai ${txState.session.done + 1}/${txState.sessionLen})` : "";
+    const wpm = txState.listenWpm;
+    // "VVV = " est joué une seule fois, juste avant le tout premier essai
+    // d'une session (comme dans RobotCW) — jamais répété aux essais
+    // suivants, qui s'enchaînent directement sur la cible (avec juste la
+    // confirmation "RR" entre chaque, déjà géré dans checkTxAnswer).
+    const isFirstOfSession = txState.session.active && txState.session.done === 0;
+    const textToPlay = isFirstOfSession ? "VVV = " + txState.target : txState.target;
+    txTargetSub.textContent = (isFirstOfSession ? "Écoutez (VVV =)... " : "Écoutez... ") + "puis manipulez cette cible au paddle" + progress;
+    playMorseTx(textToPlay, wpm, txState.freq, () => {
+      // La cible reste masquée ("?") même une fois le son terminé : c'est
+      // un vrai exercice de copie au son. Le bouton "Révéler" permet de
+      // l'afficher à la demande si besoin.
+      txTargetSub.textContent = "Manipulez cette cible au paddle, puis validez" + progress;
+    });
+  }
+}
+
+/* Compteur de réécoutes TX : incrémenté à chaque demande de réécoute de
+   l'échange en cours — clic sur "Répéter", clic sur "RPT", ou envoi au
+   paddle de AGN?/NR? en mode Contest/QSO/QSO FR. Remis à zéro à chaque
+   nouvelle cible / nouveau round (newTxRound). */
+function updateRepeatCounterTx(){
+  repeatCountTx.textContent = txState.repeatCount;
+  repeatCounterRowTx.classList.toggle("rc-active", txState.repeatCount > 0);
+}
+function bumpTxRepeatCount(){
+  txState.repeatCount++;
+  updateRepeatCounterTx();
+}
+
+function updateTxControlsForMode(){
+  const isFree = txState.txMode === "free";
+  const isContest = txState.txMode === "contest";
+  const isQso = txState.txMode === "qso";
+  const isQsoFr = txState.txMode === "qso_fr";
+  const disableTarget = isFree || isContest || isQso || isQsoFr;
+  txCheckBtn.disabled = disableTarget;
+  txCheckBtn.title = disableTarget ? "Choisissez un mode guidé (Indicatifs, Mots FR, Groupes) pour valider une cible" : "";
+  // Le bouton Révéler reste actif en mode QSO (réaliste ou français) et
+  // Contest : il sert alors à afficher le dernier message complet du
+  // correspondant, pas une cible classique.
+  const disableReveal = isFree;
+  txRevealBtn.disabled = disableReveal;
+  txRevealBtn.title = disableReveal ? "Choisissez un mode guidé pour révéler une cible" : "";
+  txRepeatBtn.disabled = disableTarget;
+  txRepeatBtn.title = disableTarget ? "Choisissez un mode guidé pour répéter une cible" : "";
+}
+
+/* ---------- Mode Contest / Pile-up ----------
+   Simule un échange de contest CW classique :
+   1) L'opérateur manipule "CQ TEST DE <son indicatif>" -> le programme
+      répond avec un faux indicatif + "K".
+   2) L'opérateur manipule "<indicatif> 5NN <numéro>" -> le programme
+      répond "RR <son indicatif> 5NN <numéro aléatoire 1-5000>" puis
+      relance automatiquement un nouveau CQ à écouter/manipuler.
+   Contrairement aux modes guidés (calls/mots/groups), il n'y a pas de
+   cible fixe à valider : c'est un échange dynamique détecté directement
+   dans le flux décodé, comme le ferait un vrai correspondant. */
+let contestState = { theirCall: "", awaitingReport: false, awaitingClosing: false, reportTimer: null, lastReport: "", currentSub: "", msgLog: [] };
+
+function setContestSub(text){ contestState.currentSub = text; txTargetSub.textContent = text; }
+function contestRefreshSub(){ txTargetSub.textContent = contestState.currentSub || ""; }
+
+function startContestRound(){
+  clearTimeout(contestState.reportTimer);
+  contestState = { theirCall: "", awaitingReport: false, awaitingClosing: false, reportTimer: null, lastReport: "", currentSub: "", msgLog: [] };
+  txTargetDisplay.textContent = "CONTEST";
+  setContestSub(`Manipulez : CQ TEST DE ${state.mycall}`);
+}
+
+function contestCheckBuffer(){
+  const buf = decodedHistory.replace(/\s+/g, "").toUpperCase();
+  const mycall = (state.mycall || "").toUpperCase();
+
+  // NR? : l'opérateur n'a pas bien capté le numéro de confirmation (RR ...
+  // 5NN <numéro>) que le programme vient de lui donner. On le rejoue tel
+  // quel, sans changer d'état — utilisable juste après une confirmation,
+  // même si le programme attend déjà le prochain CQ.
+  if(contestState.lastReport && buf.includes("NR?")){
+    clearTimeout(contestState.reportTimer);
+    bumpTxRepeatCount();
+    decodedHistory = "";
+    currentLetterBuffer = "";
+    updateDecodedDisplay();
+    const mycallSafe = mycall || "DE";
+    txTargetSub.textContent = "Écoute le rappel du numéro...";
+    playMorseTx(contestState.lastReport, txState.listenWpm, txState.freq, () => {
+      if(contestState.awaitingReport){
+        setContestSub(`Manipulez : ${contestState.theirCall} 5NN <numéro>`);
+      } else if(contestState.awaitingClosing){
+        setContestSub(`Manipulez : 73 TU`);
+      } else {
+        setContestSub(`Manipulez : CQ TEST DE ${mycallSafe}`);
+      }
+    });
+    return;
+  }
+
+  if(!contestState.awaitingReport && !contestState.awaitingClosing){
+    // Étape 1 : on attend "CQTESTDE" + son propre indicatif + "K" final.
+    // Un délai de garde de 2s de silence est aussi appliqué ici (comme
+    // pour le rapport 5NN) : le K peut arriver un peu avant que
+    // l'opérateur n'ait fini de relâcher proprement le paddle, donc on
+    // laisse un peu de marge avant de répondre.
+    if(mycall && buf.includes("CQTESTDE" + mycall + "K")){
+      clearTimeout(contestState.reportTimer);
+      contestState.reportTimer = setTimeout(() => {
+        decodedHistory = "";
+        currentLetterBuffer = "";
+        updateDecodedDisplay();
+        contestState.theirCall = randItem(CW_DATA.calls);
+        contestState.awaitingReport = true;
+        const reponse = `${mycall} DE ${contestState.theirCall} K`;
+        contestState.lastReport = reponse;
+        contestState.msgLog.push(reponse);
+        txTargetSub.textContent = "Écoute la réponse...";
+        playMorseTx(reponse, txState.listenWpm, txState.freq, () => {
+          setContestSub(`Manipulez : ${contestState.theirCall} 5NN <numéro>`);
+        });
+      }, 2000);
+    }
+  } else if(contestState.awaitingClosing){
+    // Étape 3 : clôture. On attend "73 TU" -> le programme répond "EE"
+    // puis relance un nouveau CQ à manipuler. Même délai de garde que les
+    // autres étapes, pour laisser le temps de bien terminer.
+    if(buf.includes("73TU")){
+      clearTimeout(contestState.reportTimer);
+      contestState.reportTimer = setTimeout(() => {
+        decodedHistory = "";
+        currentLetterBuffer = "";
+        updateDecodedDisplay();
+        const mycallSafe = mycall || "DE";
+        contestState.lastReport = "EE";
+        contestState.msgLog.push("EE");
+        txTargetSub.textContent = "Écoute la réponse...";
+        playMorseTx("EE", txState.listenWpm, txState.freq, () => {
+          contestState.awaitingClosing = false;
+          contestState.theirCall = "";
+          setContestSub(`Manipulez : CQ TEST DE ${mycallSafe}`);
+        });
+      }, 2000);
+    }
+  } else {
+    // AGN? : l'opérateur n'a pas bien capté l'indicatif du correspondant,
+    // on le redonne sans changer d'état ni en générer un nouveau.
+    if(buf.includes("AGN?")){
+      clearTimeout(contestState.reportTimer);
+      bumpTxRepeatCount();
+      decodedHistory = "";
+      currentLetterBuffer = "";
+      updateDecodedDisplay();
+      const target = contestState.theirCall;
+      txTargetSub.textContent = "Écoute le rappel...";
+      playMorseTx(target, txState.listenWpm, txState.freq, () => {
+        setContestSub(`Manipulez : ${target} 5NN <numéro>`);
+      });
+      return;
+    }
+    // Étape 2 : on attend "<indicatif du correspondant>5NN" + un numéro.
+    // On laisse un délai de garde de 2s de silence après la dernière
+    // détection avant de répondre, pour ne pas couper la manipulation du
+    // numéro en plein milieu (un numéro peut avoir plusieurs chiffres).
+    const target = (contestState.theirCall || "").toUpperCase();
+    const re = new RegExp(target + "5NN\\d+");
+    if(target && re.test(buf)){
+      clearTimeout(contestState.reportTimer);
+      contestState.reportTimer = setTimeout(() => {
+        decodedHistory = "";
+        currentLetterBuffer = "";
+        updateDecodedDisplay();
+        const num = 1 + Math.floor(Math.random()*5000);
+        const mycallSafe = mycall || "DE";
+        const reponse = `RR ${mycallSafe} 5NN ${num}`;
+        contestState.lastReport = reponse;
+        contestState.msgLog.push(reponse);
+        txTargetSub.textContent = "Écoute la confirmation...";
+        txState.stats.total++;
+        txState.stats.correct++;
+        txState.stats.streak++;
+        txState.stats.bestStreak = Math.max(txState.stats.bestStreak, txState.stats.streak);
+        renderTxStats();
+        saveTxStats();
+        txFeedbackLine.textContent = "✓ QSO confirmé : " + target;
+        txFeedbackLine.className = "feedback-line ok";
+        playMorseTx(reponse, txState.listenWpm, txState.freq, () => {
+          contestState.awaitingReport = false;
+          contestState.awaitingClosing = true;
+          setContestSub(`Manipulez : 73 TU`);
+        });
+      }, 2000);
+    }
+  }
+}
+
+/* ---------- Mode QSO réaliste ----------
+   Simule un vrai échange CW courtois (rag chew), comme on en entend en
+   bande basse. Séquence à 3 passes :
+   1) CQ CQ DE <mycall> -> réponse "<indicatif> DE <mycall> K"
+   2) <indicatif> DE <mycall> RST ... NAME ... QTH ... HW? -> réponse avec
+      le RST/prénom/QTH du correspondant (généré aléatoirement) + "OK?"
+   3) ... RIG ... WX ... ? <indicatif> DE <mycall> K -> réponse avec le
+      RIG/antenne/météo du correspondant
+   4) 73 -> clôture, le programme répond et relance un nouveau CQ.
+   AGN? et NR? permettent de redemander l'indicatif ou la dernière info
+   donnée, à tout moment, sans perdre l'état du QSO en cours. */
+
+/* Fonctions utilitaires : définissent le sous-titre affiché tout en le
+   mémorisant dans l'état du QSO, pour pouvoir le restaurer après que le
+   bouton "Révéler" ait temporairement affiché le dernier message complet
+   du correspondant. */
+function setQsoSub(text){ qsoState.currentSub = text; txTargetSub.textContent = text; }
+function setQsoFrSub(text){ qsoFrState.currentSub = text; txTargetSub.textContent = text; }
+function qsoRefreshSub(){ txTargetSub.textContent = qsoState.currentSub || ""; }
+function qsoFrRefreshSub(){ txTargetSub.textContent = qsoFrState.currentSub || ""; }
+
+let qsoState = { theirCall: "", theirName: "", theirQth: "", theirRst: "",
+                  theirMeteo: "", theirRig: "", theirAntenna: "",
+                  step: 0, stepTimer: null, lastMsg: "", currentSub: "", msgLog: [] };
+
+function startQsoRound(){
+  clearTimeout(qsoState.stepTimer);
+  qsoState = { theirCall: "", theirName: "", theirQth: "", theirRst: "",
+               theirMeteo: "", theirRig: "", theirAntenna: "",
+               step: 0, stepTimer: null, lastMsg: "", currentSub: "", msgLog: [] };
+  txTargetDisplay.textContent = "QSO";
+  setQsoSub(`Manipulez : CQ CQ DE ${state.mycall}`);
+}
+
+function qsoCheckBuffer(){
+  const buf = decodedHistory.replace(/\s+/g, "").toUpperCase();
+  const mycall = (state.mycall || "").toUpperCase();
+
+  // AGN? et NR? : redonne respectivement l'indicatif du correspondant ou
+  // le dernier message complet envoyé, sans changer l'étape du QSO.
+  if(qsoState.step > 0 && buf.includes("AGN?")){
+    clearTimeout(qsoState.stepTimer);
+    bumpTxRepeatCount();
+    decodedHistory = ""; currentLetterBuffer = ""; updateDecodedDisplay();
+    const call = qsoState.theirCall;
+    playMorseTx(call, txState.listenWpm, txState.freq, () => {});
+    return;
+  }
+  if(qsoState.lastMsg && buf.includes("NR?")){
+    clearTimeout(qsoState.stepTimer);
+    bumpTxRepeatCount();
+    decodedHistory = ""; currentLetterBuffer = ""; updateDecodedDisplay();
+    playMorseTx(qsoState.lastMsg, txState.listenWpm, txState.freq, () => {});
+    return;
+  }
+
+  if(qsoState.step === 0){
+    // Étape 1 : CQ CQ DE <mycall>
+    if(mycall && buf.includes("CQCQDE" + mycall)){
+      clearTimeout(qsoState.stepTimer);
+      qsoState.stepTimer = setTimeout(() => {
+        decodedHistory = ""; currentLetterBuffer = ""; updateDecodedDisplay();
+        qsoState.theirCall = randItem(CW_DATA.calls);
+        qsoState.theirName = randItem(QSO_DATA.prenoms);
+        qsoState.theirQth = randItem(QSO_DATA.villes);
+        // RST réaliste : R (lisibilité 1-5) + S (force du signal 1-9) +
+        // T (tonalité, presque toujours 9 en CW pour un signal pur).
+        const r = 1 + Math.floor(Math.random()*5);
+        const s = 1 + Math.floor(Math.random()*9);
+        qsoState.theirRst = `${r}${s}9`;
+        qsoState.theirMeteo = randItem(QSO_DATA.meteo);
+        qsoState.theirRig = randItem(QSO_DATA.rigs);
+        qsoState.theirAntenna = randItem(QSO_DATA.antennes);
+        qsoState.step = 1;
+        const msg = `${mycall} DE ${qsoState.theirCall} K`;
+        qsoState.lastMsg = msg;
+        qsoState.msgLog.push(msg);
+        txTargetSub.textContent = "Écoute la réponse...";
+        playMorseTx(msg, txState.listenWpm, txState.freq, () => {
+          setQsoSub(`Manipulez : ${qsoState.theirCall} DE ${mycall} RST ... NAME ... QTH ... HW?`);
+        });
+      }, 2000);
+    }
+  } else if(qsoState.step === 1){
+    // Étape 2 : attend "...HW?" -> répond avec RST/NAME/QTH générés
+    if(buf.includes("HW?")){
+      clearTimeout(qsoState.stepTimer);
+      qsoState.stepTimer = setTimeout(() => {
+        decodedHistory = ""; currentLetterBuffer = ""; updateDecodedDisplay();
+        qsoState.step = 2;
+        const mycallSafe = mycall || "DE";
+        const msg = `${mycallSafe} DE ${qsoState.theirCall} RST ${qsoState.theirRst} ${qsoState.theirRst} `
+                  + `NAME ${qsoState.theirName} ${qsoState.theirName} QTH ${qsoState.theirQth} ${qsoState.theirQth} OK?`;
+        qsoState.lastMsg = msg;
+        qsoState.msgLog.push(msg);
+        txTargetSub.textContent = "Écoute la réponse...";
+        playMorseTx(msg, txState.listenWpm, txState.freq, () => {
+          setQsoSub(`Manipulez : ${qsoState.theirCall} DE ${mycallSafe} RIG ... WX ... ${qsoState.theirCall} DE ${mycallSafe} K`);
+        });
+      }, 2000);
+    }
+  } else if(qsoState.step === 2){
+    // Étape 3 : attend le second "<indicatif> DE <mycall> K" -> répond avec RIG/WX
+    const target = (qsoState.theirCall || "").toUpperCase();
+    const re = new RegExp(target + "DE" + mycall + "K");
+    if(target && mycall && re.test(buf)){
+      clearTimeout(qsoState.stepTimer);
+      qsoState.stepTimer = setTimeout(() => {
+        decodedHistory = ""; currentLetterBuffer = ""; updateDecodedDisplay();
+        qsoState.step = 3;
+        const mycallSafe = mycall || "DE";
+        const msg = `${mycallSafe} DE ${qsoState.theirCall} RIG ${qsoState.theirRig} ANT ${qsoState.theirAntenna} `
+                  + `WX ${qsoState.theirMeteo} ${mycallSafe} DE ${qsoState.theirCall} K`;
+        qsoState.lastMsg = msg;
+        qsoState.msgLog.push(msg);
+        txTargetSub.textContent = "Écoute la réponse...";
+        playMorseTx(msg, txState.listenWpm, txState.freq, () => {
+          setQsoSub("Manipulez : 73 pour clôturer le QSO");
+        });
+      }, 2000);
+    }
+  } else if(qsoState.step === 3){
+    // Étape 4 : clôture sur "73"
+    if(buf.includes("73")){
+      clearTimeout(qsoState.stepTimer);
+      qsoState.stepTimer = setTimeout(() => {
+        decodedHistory = ""; currentLetterBuffer = ""; updateDecodedDisplay();
+        const mycallSafe = mycall || "DE";
+        const target = qsoState.theirCall;
+        const msg = `${mycallSafe} DE ${target} TKS FOR QSO 73 SK`;
+        qsoState.lastMsg = msg;
+        qsoState.msgLog.push(msg);
+        txState.stats.total++;
+        txState.stats.correct++;
+        txState.stats.streak++;
+        txState.stats.bestStreak = Math.max(txState.stats.bestStreak, txState.stats.streak);
+        renderTxStats();
+        saveTxStats();
+        txFeedbackLine.textContent = "✓ QSO terminé avec " + target;
+        txFeedbackLine.className = "feedback-line ok";
+        playMorseTx(msg, txState.listenWpm, txState.freq, () => {
+          setTimeout(startQsoRound, 600);
+        });
+      }, 2000);
+    }
+  }
+}
+
+/* ---------- Mode QSO français (échange en clair) ----------
+   Même principe que le QSO réaliste, mais entièrement en clair français,
+   avec des phrases complètes plutôt que des codes Q/abréviations. Séquence
+   à 5 passes :
+   1) CQ CQ DE <mycall> -> réponse "<mycall> DE <indicatif> K"
+   2) <indicatif> DE <mycall> ... RST ... PRENOM ... QTH ... HW? -> réponse
+      avec un RST aléatoire, le prénom du correspondant et son QTH + HW?
+   3) <indicatif> DE <mycall> ... TX ... ANTENNE ... WX ... ?
+      <indicatif> DE <mycall> K -> réponse avec TX/antenne/météo générés
+   4) 73 -> réponse de clôture + "73 TU EE"
+   5) EE -> fin silencieuse, retour à un nouveau CQ (pas de réponse). */
+let qsoFrState = { theirCall: "", theirName: "", theirQth: "", theirRst: "",
+                    theirTx: "", theirAntenna: "", theirAntHauteur: "",
+                    theirMeteoDesc: "", theirMeteoTemp: "", myName: "",
+                    lastMsg: "", currentSub: "", step: 0, stepTimer: null, msgLog: [] };
+
+function startQsoFrRound(){
+  clearTimeout(qsoFrState.stepTimer);
+  qsoFrState = { theirCall: "", theirName: "", theirQth: "", theirRst: "",
+                 theirTx: "", theirAntenna: "", theirAntHauteur: "",
+                 theirMeteoDesc: "", theirMeteoTemp: "", myName: "",
+                 lastMsg: "", currentSub: "", step: 0, stepTimer: null, msgLog: [] };
+  txTargetDisplay.textContent = "QSO FR";
+  setQsoFrSub(`Manipulez : CQ CQ DE ${state.mycall}`);
+}
+
+function qsoFrCheckBuffer(){
+  const buf = decodedHistory.replace(/\s+/g, "").toUpperCase();
+  const mycall = (state.mycall || "").toUpperCase();
+
+  if(qsoFrState.step === 0){
+    // Étape 1 : CQ CQ DE <mycall>
+    if(mycall && buf.includes("CQCQDE" + mycall)){
+      clearTimeout(qsoFrState.stepTimer);
+      qsoFrState.stepTimer = setTimeout(() => {
+        decodedHistory = ""; currentLetterBuffer = ""; updateDecodedDisplay();
+        qsoFrState.theirCall = randItem(CW_DATA.calls);
+        qsoFrState.theirName = randItem(QSO_FR_DATA.prenoms);
+        qsoFrState.theirQth = randItem(QSO_FR_DATA.villes);
+        const r = 1 + Math.floor(Math.random()*5);
+        const s = 1 + Math.floor(Math.random()*9);
+        qsoFrState.theirRst = `${r}${s}9`;
+        qsoFrState.theirTx = randItem(QSO_FR_DATA.tx);
+        const ant = randItem(QSO_FR_DATA.antennes);
+        qsoFrState.theirAntenna = ant.nom;
+        qsoFrState.theirAntHauteur = ant.hauteur;
+        const wx = randItem(QSO_FR_DATA.meteo);
+        qsoFrState.theirMeteoDesc = wx.desc;
+        qsoFrState.theirMeteoTemp = wx.temp;
+        qsoFrState.step = 1;
+        const msg = `${mycall} DE ${qsoFrState.theirCall} K`;
+        qsoFrState.lastMsg = msg;
+        qsoFrState.msgLog.push(msg);
+        txTargetSub.textContent = "Écoute la réponse...";
+        playMorseTx(msg, txState.listenWpm, txState.freq, () => {
+          setQsoFrSub(`Manipulez : ${qsoFrState.theirCall} DE ${mycall} BJR CHER AMI MERCI D'AVOIR REPONDU A MON APPEL VOTRE RST EST ... MON PRENOM EST ... MON QTH ... HW? ${qsoFrState.theirCall} DE ${mycall} K`);
+        });
+      }, 2000);
+    }
+  } else if(qsoFrState.step === 1){
+    // Étape 2 : attend le premier "<indicatif> DE <mycall> ... HW? <indicatif> DE <mycall> K"
+    const target = (qsoFrState.theirCall || "").toUpperCase();
+    const re = new RegExp(target + "DE" + mycall + ".*HW\\?.*" + target + "DE" + mycall + "K");
+    if(target && mycall && re.test(buf)){
+      clearTimeout(qsoFrState.stepTimer);
+      qsoFrState.stepTimer = setTimeout(() => {
+        decodedHistory = ""; currentLetterBuffer = ""; updateDecodedDisplay();
+        qsoFrState.step = 2;
+        // Extrait le prénom de l'opérateur depuis sa propre transmission
+        // ("MON PRENOM EST DENIS DENIS" -> "DENIS"), répété deux fois dans
+        // le buffer désespacé : la rétro-référence \1 capture exactement
+        // ce qui est répété, sans déborder sur le reste du message.
+        const nameMatch = buf.match(/MONPRENOMEST([A-Z]+?)\1/);
+        qsoFrState.myName = nameMatch ? nameMatch[1] : "OM";
+        const msg = `${mycall} DE ${target} BJR CHER OM ${qsoFrState.myName} MERCI POUR LE REPORT = `
+                  + `VOTRE REPORT EST ${qsoFrState.theirRst} MON PRENOM EST ${qsoFrState.theirName} ${qsoFrState.theirName} `
+                  + `MON QTH ${qsoFrState.theirQth} HW? ${mycall} DE ${target} K`;
+        qsoFrState.lastMsg = msg;
+        qsoFrState.msgLog.push(msg);
+        txTargetSub.textContent = "Écoute la réponse...";
+        playMorseTx(msg, txState.listenWpm, txState.freq, () => {
+          setQsoFrSub(`Manipulez : ${target} DE ${mycall} ICI MON TX ... AVEC ... WATTS = MON ANTENNE ... = ICI LE WX ... ? ${target} DE ${mycall} K`);
+        });
+      }, 2000);
+    }
+  } else if(qsoFrState.step === 2){
+    // Étape 3 : attend le second "<indicatif> DE <mycall> ... ? <indicatif> DE <mycall> K"
+    const target = (qsoFrState.theirCall || "").toUpperCase();
+    const re = new RegExp(target + "DE" + mycall + "K$");
+    if(target && mycall && re.test(buf)){
+      clearTimeout(qsoFrState.stepTimer);
+      qsoFrState.stepTimer = setTimeout(() => {
+        decodedHistory = ""; currentLetterBuffer = ""; updateDecodedDisplay();
+        qsoFrState.step = 3;
+        const msg = `${mycall} DE ${target} MERCI ${qsoFrState.myName} POUR CES INFOS = `
+                  + `ICI LE TX EST ${qsoFrState.theirTx} AVEC 100 WATTS = `
+                  + `MON ANTENNE ${qsoFrState.theirAntenna} A ${qsoFrState.theirAntHauteur} METRES DU SOL = `
+                  + `WX ICI ${qsoFrState.theirMeteoDesc} AVEC UNE TEMPERATURE DE ${qsoFrState.theirMeteoTemp}C ${qsoFrState.theirMeteoTemp}C `
+                  + `${mycall} DE ${target} K`;
+        qsoFrState.lastMsg = msg;
+        qsoFrState.msgLog.push(msg);
+        txTargetSub.textContent = "Écoute la réponse...";
+        playMorseTx(msg, txState.listenWpm, txState.freq, () => {
+          setQsoFrSub("Manipulez votre clôture + 73 pour terminer le QSO");
+        });
+      }, 2000);
+    }
+  } else if(qsoFrState.step === 3){
+    // Étape 4 : clôture sur "73"
+    if(buf.includes("73")){
+      clearTimeout(qsoFrState.stepTimer);
+      qsoFrState.stepTimer = setTimeout(() => {
+        decodedHistory = ""; currentLetterBuffer = ""; updateDecodedDisplay();
+        const target = qsoFrState.theirCall;
+        qsoFrState.step = 4;
+        const msg = `${mycall} DE ${target} OUI MERCI AUSSI ${qsoFrState.myName} POUR CE QSO EN CLAIR FRANCAIS SE FUT UN PLAISIR = `
+                  + `LES BONS CONTACTS POUR LA SUITE ET AU PLAISIR DE RECROISER LES ANTENNES 73 `
+                  + `${mycall} DE ${target} 73 TU EE`;
+        qsoFrState.lastMsg = msg;
+        qsoFrState.msgLog.push(msg);
+        txState.stats.total++;
+        txState.stats.correct++;
+        txState.stats.streak++;
+        txState.stats.bestStreak = Math.max(txState.stats.bestStreak, txState.stats.streak);
+        renderTxStats();
+        saveTxStats();
+        txFeedbackLine.textContent = "✓ QSO terminé avec " + target;
+        txFeedbackLine.className = "feedback-line ok";
+        playMorseTx(msg, txState.listenWpm, txState.freq, () => {
+          setQsoFrSub("Manipulez EE pour clore définitivement (pas de réponse)");
+        });
+      }, 2000);
+    }
+  } else if(qsoFrState.step === 4){
+    // Étape 5 : EE final, pas de réponse, juste un nouveau CQ
+    if(buf.includes("EE")){
+      clearTimeout(qsoFrState.stepTimer);
+      qsoFrState.stepTimer = setTimeout(() => {
+        startQsoFrRound();
+      }, 1500);
+    }
+  }
+}
+
+function checkTxAnswer(){
+  if(txState.txMode === "free") return;
+  finalizeLetter(); // force la dernière lettre en attente
+  const target = txState.target.trim().toUpperCase();
+  // Comme pour la détection automatique : on ne compare que les N derniers
+  // caractères décodés (N = longueur de la cible), pour permettre de
+  // reprendre un groupe depuis le début en cas d'erreur de manipulation,
+  // sans avoir besoin d'effacer quoi que ce soit au préalable.
+  const fullGuess = decodedHistory.trim().toUpperCase();
+  const guess = fullGuess.slice(-target.length);
+  txState.stats.total++;
+  const ok = guess === target;
+  if(ok){
+    txState.stats.correct++;
+    txState.stats.streak++;
+    txState.stats.bestStreak = Math.max(txState.stats.bestStreak, txState.stats.streak);
+    txFeedbackLine.textContent = "✓ Envoyé correctement : " + guess;
+    txFeedbackLine.className = "feedback-line ok";
+  } else {
+    txState.stats.streak = 0;
+    txFeedbackLine.textContent = `✗ Décodé "${guess || "—"}" — réécoute…`;
+    txFeedbackLine.className = "feedback-line bad";
+  }
+  renderTxStats();
+  saveTxStats();
+  if(ok){
+    // Réponse "RR" en CW, comme un vrai correspondant qui confirme la
+    // bonne réception, avant de passer à la cible suivante — ou d'afficher
+    // le score final si la session de N essais est terminée.
+    txState.session.done++;
+    txState.session.correct++;
+    playMorseTx("RR", txState.listenWpm, txState.freq, () => {
+      if(txState.session.active && txState.session.done >= txState.sessionLen){
+        showSessionScore();
+      } else {
+        setTimeout(newTxRound, 400);
+      }
+    });
+  } else {
+    // Mauvaise réponse : on ne génère pas une nouvelle cible, on réécoute
+    // la même pour permettre à l'opérateur de réessayer immédiatement.
+    decodedHistory = "";
+    currentLetterBuffer = "";
+    updateDecodedDisplay();
+    setTimeout(() => {
+      txTargetDisplay.textContent = "?";
+      txTargetSub.textContent = "Réécoute... puis manipulez cette cible au paddle";
+      playMorseTx(txState.target, txState.listenWpm, txState.freq, () => {
+        txTargetSub.textContent = "Manipulez cette cible au paddle, puis validez";
+      });
+    }, 900);
+  }
+}
+
+function showSessionScore(){
+  // Comme dans RobotCW : affiche "Note = X/Y" une fois le nombre d'essais
+  // de la session atteint, puis attend un clic sur "Nouvelle cible" (qui
+  // relance déjà newTxRound) pour démarrer une nouvelle session de N
+  // essais. La session ne se relance jamais automatiquement, pour laisser
+  // le temps de lire le score.
+  const correct = txState.session.correct;
+  const total = txState.session.done;
+  txState.session.active = false;
+  txTargetDisplay.textContent = "SCORE";
+  txTargetSub.textContent = `Session terminée — Note = ${correct}/${total}. Cliquez sur "Nouvelle cible" pour recommencer.`;
+  txFeedbackLine.textContent = `🏁 Session terminée : ${correct}/${total} (${Math.round(100*correct/total)}%)`;
+  txFeedbackLine.className = "feedback-line ok";
+}
+
+function renderTxStats(){
+  txStatCorrect.textContent = txState.stats.correct;
+  const acc = txState.stats.total ? Math.round(100*txState.stats.correct/txState.stats.total) : null;
+  txStatAccuracy.textContent = acc===null ? "—" : acc+"%";
+  txStatStreak.textContent = txState.stats.bestStreak;
+}
+
+/* ---------- DOM refs TX ---------- */
+const rxtxSwitch = el("rxtxSwitch");
+const scopeTx = el("scopeTx");
+const scopeTxCtx = scopeTx.getContext("2d");
+const scopeTxStatus = el("scopeTxStatus");
+const scopeTxWpm = el("scopeTxWpm");
+const txFreqReadout = el("txFreqReadout");
+const txTargetDisplay = el("txTargetDisplay");
+const txTargetSub = el("txTargetSub");
+const ditKey = el("ditKey");
+const dahKey = el("dahKey");
+const decodedText = el("decodedText");
+const txFeedbackLine = el("txFeedbackLine");
+const txNewTargetBtn = el("txNewTargetBtn");
+const txRevealBtn = el("txRevealBtn");
+const txRepeatBtn = el("txRepeatBtn");
+const repeatCountTx = el("repeatCountTx");
+const repeatCounterRowTx = el("repeatCounterRowTx");
+const txClearBtn = el("txClearBtn");
+const txCheckBtn = el("txCheckBtn");
+const keyerModeSeg = el("keyerModeSeg");
+const txWpmSlider = el("txWpmSlider");
+const txWpmVal = el("txWpmVal");
+const txListenWpmSlider = el("txListenWpmSlider");
+const txListenWpmVal = el("txListenWpmVal");
+const txFreqSlider = el("txFreqSlider");
+const txFreqVal = el("txFreqVal");
+const txFarnsSlider = el("txFarnsSlider");
+const txFarnsVal = el("txFarnsVal");
+const txSessionLenSlider = el("txSessionLenSlider");
+const txSessionLenVal = el("txSessionLenVal");
+const captureDitBtn = el("captureDitBtn");
+const captureDahBtn = el("captureDahBtn");
+const kbdDitHint = el("kbdDitHint");
+const kbdHintFull = el("kbdHintFull");
+const kbdDahHint = el("kbdDahHint");
+const swapPaddleToggle = el("swapPaddleToggle");
+const txModeTabs = el("txModeTabs");
+const txStatCorrect = el("txStatCorrect");
+const txStatAccuracy = el("txStatAccuracy");
+const txStatCpm = el("txStatCpm");
+const txStatStreak = el("txStatStreak");
+const resetTxStatsBtn = el("resetTxStatsBtn");
+
+/* ---------- Scope TX rendering (réutilise la mécanique du scope RX) ---------- */
+let scopeTxDPR = window.devicePixelRatio || 1;
+function resizeScopeTx(){
+  const rect = scopeTx.getBoundingClientRect();
+  scopeTxDPR = window.devicePixelRatio || 1;
+  scopeTx.width = Math.round(rect.width * scopeTxDPR);
+  scopeTx.height = Math.round(rect.height * scopeTxDPR);
+}
+window.addEventListener("resize", resizeScopeTx);
+
+let scopeTxRafId = null;
+let scopeTxIdleAngle = 0;
+function drawScopeTx(){
+  scopeTxRafId = requestAnimationFrame(drawScopeTx);
+  const w = scopeTx.width, h = scopeTx.height;
+  scopeTxCtx.clearRect(0,0,w,h);
+  const midY = h/2;
+
+  scopeTxCtx.strokeStyle = "rgba(255,159,64,0.06)";
+  scopeTxCtx.lineWidth = 1;
+  scopeTxCtx.beginPath();
+  scopeTxCtx.moveTo(0, midY); scopeTxCtx.lineTo(w, midY);
+  scopeTxCtx.stroke();
+  for(let gx=0; gx<w; gx+=Math.round(40*scopeTxDPR)){
+    scopeTxCtx.beginPath();
+    scopeTxCtx.moveTo(gx,0); scopeTxCtx.lineTo(gx,h);
+    scopeTxCtx.strokeStyle = "rgba(255,159,64,0.03)";
+    scopeTxCtx.stroke();
+  }
+
+  const live = isPressed.dit || isPressed.dah;
+  if(!live && elementQueue.length === 0){
+    scopeTxIdleAngle += 0.02;
+    scopeTxCtx.strokeStyle = "rgba(255,159,64,0.18)";
+    scopeTxCtx.lineWidth = 2*scopeTxDPR;
+    scopeTxCtx.beginPath();
+    for(let x=0;x<=w;x+=4*scopeTxDPR){
+      const y = midY + Math.sin(x*0.02 + scopeTxIdleAngle)*1.5*scopeTxDPR;
+      if(x===0) scopeTxCtx.moveTo(x,y); else scopeTxCtx.lineTo(x,y);
+    }
+    scopeTxCtx.stroke();
+    return;
+  }
+
+  const ctx = audioCtx;
+  if(!ctx) return;
+  const nowSec = ctx.currentTime;
+  const windowSec = 1.4;
+  const startSec = nowSec - windowSec*0.85;
+  const pxPerSec = w / windowSec;
+
+  scopeTxCtx.lineWidth = 2.2*scopeTxDPR;
+  scopeTxCtx.strokeStyle = "#ff9f40";
+  scopeTxCtx.shadowColor = "rgba(255,159,64,0.55)";
+  scopeTxCtx.shadowBlur = 8*scopeTxDPR;
+  scopeTxCtx.beginPath();
+  let started = false;
+  const ampHigh = h*0.28;
+
+  for(const seg of elementQueue){
+    const segStart = seg.t - startSec;
+    const segDur = seg.dur > 5 ? (nowSec - seg.t) : seg.dur; // segment "en cours" (dur provisoire straight key)
+    const segEnd = segStart + segDur;
+    if(segEnd < 0 || segStart > windowSec) continue;
+    const x0 = Math.max(0, segStart)*pxPerSec;
+    const x1 = Math.min(windowSec, segEnd)*pxPerSec;
+    const y = seg.on ? midY - ampHigh*0.55 : midY;
+    if(!started){ scopeTxCtx.moveTo(x0, midY); started = true; }
+    scopeTxCtx.lineTo(x0, y);
+    if(seg.on){
+      const steps = 14;
+      for(let i=0;i<=steps;i++){
+        const xx = x0 + (x1-x0)*(i/steps);
+        const yy = y + Math.sin((xx/scopeTxDPR)*0.9)*(h*0.07);
+        scopeTxCtx.lineTo(xx, yy);
+      }
+    } else {
+      scopeTxCtx.lineTo(x1, y);
+    }
+  }
+  scopeTxCtx.stroke();
+  scopeTxCtx.shadowBlur = 0;
+
+  const cursorX = (windowSec*0.85)*pxPerSec;
+  scopeTxCtx.strokeStyle = "rgba(95,255,176,0.4)";
+  scopeTxCtx.lineWidth = 1*scopeTxDPR;
+  scopeTxCtx.beginPath();
+  scopeTxCtx.moveTo(cursorX, 0); scopeTxCtx.lineTo(cursorX, h);
+  scopeTxCtx.stroke();
+}
+
+/* ---------- Bindings UI TX ---------- */
+rxtxSwitch.addEventListener("click", (e) => {
+  const btn = e.target.closest(".rxtx-btn");
+  if(!btn) return;
+  const which = btn.dataset.rxtx;
+  document.querySelectorAll(".rxtx-btn").forEach(b => b.classList.toggle("active", b===btn));
+  document.body.classList.toggle("tx-active", which === "tx");
+  txState.active = (which === "tx");
+  if(which === "tx"){
+    resizeScopeTx();
+    if(!scopeTxRafId) scopeTxRafId = requestAnimationFrame(drawScopeTx);
+    answerInput.blur();
+  } else {
+    // relâche tout paddle actif en quittant le mode TX
+    isPressed.dit = false; isPressed.dah = false;
+    memoryQueue = [];
+    keyerRunning = false;
+    clearTimeout(keyerLoopHandle);
+    setKeyVisual("dit", false); setKeyVisual("dah", false);
+    txToneOff();
+  }
+});
+
+bindPointerPaddle(ditKey, "dit");
+bindPointerPaddle(dahKey, "dah");
+
+txNewTargetBtn.addEventListener("click", () => {
+  const guidedModes = ["calls", "mots", "groups", "groups_letters", "groups_digits"];
+  if(guidedModes.includes(txState.txMode) && !txState.session.active){
+    // La session précédente était arrivée à son terme (score affiché) :
+    // on en démarre une nouvelle plutôt que de continuer celle déjà finie.
+    txState.session = { done: 0, correct: 0, active: true };
+    txState.groupLog = [];
+  }
+  newTxRound();
+});
+let qsoMsgRevealed = false;
+txRevealBtn.addEventListener("click", () => {
+  if(txState.txMode === "qso" || txState.txMode === "qso_fr"){
+    const st = txState.txMode === "qso" ? qsoState : qsoFrState;
+    if(!st.lastMsg) return;
+    if(qsoMsgRevealed){
+      // Deuxième clic : on ne sait pas reconstruire le sous-titre normal
+      // depuis ici sans dupliquer toute la logique d'étape, donc on relit
+      // simplement l'état actuel pour le réafficher correctement.
+      qsoMsgRevealed = false;
+      if(txState.txMode === "qso") qsoRefreshSub(); else qsoFrRefreshSub();
+    } else {
+      qsoMsgRevealed = true;
+      txTargetSub.textContent = "Dernier message : " + st.lastMsg;
+    }
+    return;
+  }
+  if(txState.txMode === "contest"){
+    if(!contestState.lastReport) return;
+    if(qsoMsgRevealed){
+      qsoMsgRevealed = false;
+      contestRefreshSub();
+    } else {
+      qsoMsgRevealed = true;
+      txTargetSub.textContent = "Dernier message : " + contestState.lastReport;
+    }
+    return;
+  }
+  if(txState.txMode === "free" || !txState.target) return;
+  txTargetDisplay.textContent = txState.target;
+});
+txRepeatBtn.addEventListener("click", () => {
+  // Rejoue le son de la cible actuelle ET efface ce qui a déjà été
+  // manipulé : en cas d'erreur, on peut directement recommencer la
+  // cible depuis le début sans avoir à cliquer sur "Effacer" séparément.
+  if(txState.txMode === "free" || !txState.target) return;
+  bumpTxRepeatCount();
+  decodedHistory = "";
+  currentLetterBuffer = "";
+  clearTimeout(letterGapTimer);
+  clearTimeout(wordGapTimer);
+  updateDecodedDisplay();
+  txFeedbackLine.textContent = "\u00A0";
+  txFeedbackLine.className = "feedback-line";
+  txTargetSub.textContent = "Répétition...";
+  playMorseTx(txState.target, txState.listenWpm, txState.freq, () => {
+    txTargetSub.textContent = "Manipulez cette cible au paddle, puis validez";
+  });
+});
+
+/* RPT : demande la réécoute de la séquence complète en cours.
+   - Modes guidés (Indicatifs, Mots FR, Groupes...) : rejoue TOUS les
+     groupes/indicatifs/mots déjà envoyés depuis le début de la session en
+     cours (pas seulement celui du moment) — utile pour se resituer après
+     plusieurs groupes de 5 ou 10 lettres/chiffres déjà passés.
+   - Contest / QSO réaliste / QSO français : rejoue l'INTÉGRALITÉ de
+     l'échange depuis le début du round (tous les messages envoyés par le
+     correspondant jusqu'ici : indicatif, RST, chiffres, prénom, QTH,
+     matériel, météo...), pas seulement le dernier message — contrairement
+     à "AGN?"/"NR?" qui ne redonnent qu'un seul élément à la fois.
+   Déclenchable soit en cliquant sur le bouton RPT, soit en le manipulant
+   directement au paddle (comme AGN?/NR?) — voir performTxRpt(). */
+function performTxRpt(){
+  const guidedModes = ["calls", "mots", "groups", "groups_letters", "groups_digits"];
+  if(guidedModes.includes(txState.txMode)){
+    ensureAudio();
+    const seq = (txState.groupLog && txState.groupLog.length) ? txState.groupLog.join(" ") : txState.target;
+    if(!seq){
+      txFeedbackLine.textContent = "Rien à répéter pour l'instant — lancez d'abord une cible.";
+      txFeedbackLine.className = "feedback-line bad";
+      return;
+    }
+    bumpTxRepeatCount();
+    decodedHistory = "";
+    currentLetterBuffer = "";
+    clearTimeout(letterGapTimer);
+    clearTimeout(wordGapTimer);
+    updateDecodedDisplay();
+    const nbGroupes = (txState.groupLog && txState.groupLog.length) ? txState.groupLog.length : 1;
+    txFeedbackLine.textContent = `🔁 Réécoute des ${nbGroupes} groupe${nbGroupes>1?"s":""} envoyés depuis le début...`;
+    txFeedbackLine.className = "feedback-line";
+    const progress = txState.session.active ? ` (essai ${txState.session.done + 1}/${txState.sessionLen})` : "";
+    txTargetSub.textContent = "Réécoute de tous les groupes envoyés depuis le début...";
+    playMorseTx(seq, txState.listenWpm, txState.freq, () => {
+      txTargetSub.textContent = "Manipulez cette cible au paddle, puis validez" + progress;
+      txFeedbackLine.textContent = "\u00A0";
+      txFeedbackLine.className = "feedback-line";
+    });
+    return;
+  }
+  ensureAudio();
+  let fullSeq = "";
+  if(txState.txMode === "contest") fullSeq = (contestState.msgLog || []).join(" = ");
+  else if(txState.txMode === "qso") fullSeq = (qsoState.msgLog || []).join(" = ");
+  else if(txState.txMode === "qso_fr") fullSeq = (qsoFrState.msgLog || []).join(" = ");
+  if(!fullSeq){
+    txFeedbackLine.textContent = "Rien à répéter pour l'instant — l'échange n'a pas encore commencé.";
+    txFeedbackLine.className = "feedback-line bad";
+    return;
+  }
+  bumpTxRepeatCount();
+  decodedHistory = "";
+  currentLetterBuffer = "";
+  clearTimeout(letterGapTimer);
+  clearTimeout(wordGapTimer);
+  updateDecodedDisplay();
+  txTargetSub.textContent = "Réécoute de tout l'échange...";
+  playMorseTx(fullSeq, txState.listenWpm, txState.freq, () => {
+    if(txState.txMode === "contest") contestRefreshSub();
+    else if(txState.txMode === "qso") qsoRefreshSub();
+    else if(txState.txMode === "qso_fr") qsoFrRefreshSub();
+  });
+}
+txClearBtn.addEventListener("click", () => {
+  decodedHistory = ""; currentLetterBuffer = "";
+  clearTimeout(letterGapTimer); clearTimeout(wordGapTimer);
+  updateDecodedDisplay();
+  txFeedbackLine.textContent = "\u00A0";
+  txFeedbackLine.className = "feedback-line";
+});
+txCheckBtn.addEventListener("click", checkTxAnswer);
+
+keyerModeSeg.addEventListener("click", (e) => {
+  const btn = e.target.closest("button");
+  if(!btn) return;
+  txState.keyerMode = btn.dataset.keyermode;
+  keyerModeSeg.querySelectorAll("button").forEach(b => b.classList.toggle("active", b===btn));
+  updateKbdHintText();
+  saveTxPrefs();
+});
+
+txWpmSlider.addEventListener("input", () => {
+  txState.wpm = parseInt(txWpmSlider.value,10);
+  txWpmVal.textContent = txState.wpm + " WPM";
+  scopeTxWpm.textContent = txState.wpm + " WPM";
+  saveTxPrefs();
+});
+txListenWpmSlider.addEventListener("input", () => {
+  txState.listenWpm = parseInt(txListenWpmSlider.value,10);
+  txListenWpmVal.textContent = txState.listenWpm + " WPM";
+  saveTxPrefs();
+});
+txFreqSlider.addEventListener("input", () => {
+  txState.freq = parseInt(txFreqSlider.value,10);
+  txFreqVal.textContent = txState.freq + " Hz";
+  txFreqReadout.textContent = txState.freq + " Hz";
+  if(txOsc) txOsc.frequency.value = txState.freq;
+  saveTxPrefs();
+});
+txFarnsSlider.addEventListener("input", () => {
+  txState.farnsworth = parseInt(txFarnsSlider.value,10);
+  txFarnsVal.textContent = txState.farnsworth === 0 ? "Désactivé" : ("-" + txState.farnsworth + " WPM");
+  saveTxPrefs();
+});
+txSessionLenSlider.addEventListener("input", () => {
+  txState.sessionLen = parseInt(txSessionLenSlider.value,10);
+  txSessionLenVal.textContent = txState.sessionLen;
+  saveTxPrefs();
+});
+swapPaddleToggle.addEventListener("change", () => {
+  txState.swapPaddles = swapPaddleToggle.checked;
+  saveTxPrefs();
+});
+captureDitBtn.addEventListener("click", () => startKeyCapture("dit", captureDitBtn));
+captureDahBtn.addEventListener("click", () => startKeyCapture("dah", captureDahBtn));
+
+txModeTabs.addEventListener("click", (e) => {
+  const btn = e.target.closest(".mode-btn");
+  if(!btn) return;
+  txState.txMode = btn.dataset.txmode;
+  txModeTabs.querySelectorAll(".mode-btn").forEach(b => b.classList.toggle("active", b===btn));
+  // Démarre une nouvelle session de N essais pour les modes guidés
+  // (Indicatifs, Mots FR, Groupes...) : à chaque changement d'onglet, le
+  // compteur de progression repart de zéro pour ce mode.
+  const guidedModes = ["calls", "mots", "groups", "groups_letters", "groups_digits"];
+  if(guidedModes.includes(txState.txMode)){
+    txState.session = { done: 0, correct: 0, active: true };
+    txState.groupLog = [];
+  } else {
+    txState.session = { done: 0, correct: 0, active: false };
+  }
+  saveTxPrefs();
+  newTxRound();
+});
+
+resetTxStatsBtn.addEventListener("click", () => {
+  txState.stats = { correct:0, total:0, bestStreak:0, streak:0 };
+  renderTxStats();
+  saveTxStats();
+});
+
+/* ============================================================
+   MODULE PONT — Connexion au pont Winkeyer USB (WebSocket local)
+   ============================================================ */
+const BRIDGE_URL = "ws://localhost:8765";
+const bridgeState = {
+  socket: null,
+  connected: false,
+  reconnectTimer: null,
+  reconnectDelay: 1500,
+  manuallyStopped: false,
+};
+
+const paddleSourceSeg = el("paddleSourceSeg");
+const bridgeStatusField = el("bridgeStatusField");
+const bridgeStatus = el("bridgeStatus");
+const bridgeDot = el("bridgeDot");
+const bridgeStatusText = el("bridgeStatusText");
+const bridgeRetryBtn = el("bridgeRetryBtn");
+
+function setBridgeVisual(state, text){
+  bridgeDot.className = "bridge-dot " + state;
+  bridgeStatusText.textContent = text;
+}
+
+function connectBridge(){
+  if(bridgeState.socket && (bridgeState.socket.readyState === WebSocket.OPEN || bridgeState.socket.readyState === WebSocket.CONNECTING)){
+    return;
+  }
+  bridgeState.manuallyStopped = false;
+  setBridgeVisual("connecting", "Connexion au pont…");
+  let socket;
+  try{
+    socket = new WebSocket(BRIDGE_URL);
+  }catch(e){
+    setBridgeVisual("error", "Impossible de se connecter — pont non lancé ?");
+    scheduleBridgeReconnect();
+    return;
+  }
+  bridgeState.socket = socket;
+
+  socket.addEventListener("open", () => {
+    bridgeState.connected = true;
+    bridgeState.reconnectDelay = 1500;
+    setBridgeVisual("connected", "Pont connecté — manipule ton Winkeyer");
+  });
+
+  socket.addEventListener("message", (ev) => {
+    let msg;
+    try{ msg = JSON.parse(ev.data); }catch(e){ return; }
+    handleBridgeMessage(msg);
+  });
+
+  socket.addEventListener("close", () => {
+    bridgeState.connected = false;
+    if(txState.paddleSource === "bridge" && !bridgeState.manuallyStopped){
+      setBridgeVisual("error", "Connexion perdue — nouvelle tentative…");
+      scheduleBridgeReconnect();
+    }
+  });
+
+  socket.addEventListener("error", () => {
+    bridgeState.connected = false;
+    if(txState.paddleSource === "bridge"){
+      setBridgeVisual("error", "Pont introuvable sur ws://localhost:8765");
+    }
+  });
+}
+
+function scheduleBridgeReconnect(){
+  clearTimeout(bridgeState.reconnectTimer);
+  if(txState.paddleSource !== "bridge" || bridgeState.manuallyStopped) return;
+  bridgeState.reconnectTimer = setTimeout(() => {
+    bridgeState.reconnectDelay = Math.min(bridgeState.reconnectDelay * 1.4, 8000);
+    connectBridge();
+  }, bridgeState.reconnectDelay);
+}
+
+function disconnectBridge(){
+  bridgeState.manuallyStopped = true;
+  clearTimeout(bridgeState.reconnectTimer);
+  if(bridgeState.socket){
+    try{ bridgeState.socket.close(); }catch(e){}
+    bridgeState.socket = null;
+  }
+  bridgeState.connected = false;
+}
+
+function handleBridgeMessage(msg){
+  switch(msg.type){
+    case "hello":
+      setBridgeVisual("connected", `Pont connecté (${msg.port || "port inconnu"})`);
+      break;
+    case "char":
+      scopeTxStatus.textContent = "ÉMISSION (Winkeyer)";
+      appendDecodedChar(msg.char);
+      clearTimeout(bridgeIdleTimer);
+      bridgeIdleTimer = setTimeout(() => { scopeTxStatus.textContent = "PADDLE AU REPOS"; }, 600);
+      break;
+    case "backspace":
+      appendBackspace();
+      break;
+    case "status":
+      // Octets de status bruts du Winkeyer (changement de vitesse au pot, etc.)
+      // Non exploités pour l'instant, réservé à une évolution future.
+      break;
+  }
+}
+let bridgeIdleTimer = null;
+
+function setPaddleSource(source){
+  txState.paddleSource = source;
+  paddleSourceSeg.querySelectorAll("button").forEach(b => b.classList.toggle("active", b.dataset.source === source));
+  bridgeStatusField.style.display = (source === "bridge") ? "block" : "none";
+  if(source === "bridge"){
+    connectBridge();
+  } else {
+    disconnectBridge();
+  }
+  saveTxPrefs();
+}
+
+paddleSourceSeg.addEventListener("click", (e) => {
+  const btn = e.target.closest("button");
+  if(!btn) return;
+  setPaddleSource(btn.dataset.source);
+});
+bridgeRetryBtn.addEventListener("click", () => {
+  bridgeState.reconnectDelay = 1500;
+  connectBridge();
+});
+
+function applyTxPrefsToUI(){
+  txWpmSlider.value = txState.wpm;
+  txListenWpmSlider.value = txState.listenWpm;
+  txFreqSlider.value = txState.freq;
+  txFarnsSlider.value = txState.farnsworth;
+  txSessionLenSlider.value = txState.sessionLen;
+  swapPaddleToggle.checked = txState.swapPaddles;
+  keyerModeSeg.querySelectorAll("button").forEach(b => b.classList.toggle("active", b.dataset.keyermode===txState.keyerMode));
+  txModeTabs.querySelectorAll(".mode-btn").forEach(b => b.classList.toggle("active", b.dataset.txmode===txState.txMode));
+  refreshKeyLabels();
+  txWpmVal.textContent = txState.wpm + " WPM";
+  scopeTxWpm.textContent = txState.wpm + " WPM";
+  txListenWpmVal.textContent = txState.listenWpm + " WPM";
+  txFreqVal.textContent = txState.freq + " Hz";
+  txFreqReadout.textContent = txState.freq + " Hz";
+  txFarnsVal.textContent = txState.farnsworth === 0 ? "Désactivé" : ("-" + txState.farnsworth + " WPM");
+  txSessionLenVal.textContent = txState.sessionLen;
+  paddleSourceSeg.querySelectorAll("button").forEach(b => b.classList.toggle("active", b.dataset.source === txState.paddleSource));
+  bridgeStatusField.style.display = (txState.paddleSource === "bridge") ? "block" : "none";
+  if(txState.paddleSource === "bridge"){
+    connectBridge();
+  }
+}
+
+function initTx(){
+  loadTxPrefs();
+  loadTxStats();
+  applyTxPrefsToUI();
+  renderTxStats();
+  newTxRound();
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+function applyPrefsToUI(){
+  wpmSlider.value = state.wpm;
+  freqSlider.value = state.freq;
+  groupLenSlider.value = state.groupLen;
+  farnsSlider.value = state.farnsworth;
+  noiseToggle.checked = state.noise;
+  echoToggle.checked = state.echo;
+  mycallInput.value = state.mycall;
+  mycallDisplay.textContent = state.mycall || "—";
+  syncSliderLabels();
+  setModeUI(state.mode);
+}
+
+function init(){
+  loadPrefs();
+  loadStats();
+  buildAlphaGrid();
+  applyPrefsToUI();
+  renderStats();
+  resizeScope();
+  newRound();
+  if(!scopeRafId) scopeRafId = requestAnimationFrame(drawScope);
+  initTx();
+}
+
+init();
+
+})();
+
+</script>
+</body>
+</html>
