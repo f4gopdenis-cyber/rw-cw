@@ -20,6 +20,12 @@ Lance la session
 
 Aucune inscription ni installation n'est nécessaire — tout fonctionne en local, directement dans le navigateur.
 
+Utiliser un vrai manipulateur (paddle) au lieu du clavier
+
+RX-CW s'utilise directement au clavier, mais pour s'entraîner avec un vrai manipulateur (paddle), il faut une interface qui transforme les contacts du manipulateur en entrées reconnues par le PC. Deux solutions :
+
+Bricoler soi-même avec un Digispark : une carte USB très bon marché (quelques euros), programmable pour se faire passer pour un clavier (HID) et envoyer les touches correspondant aux points/traits quand on actionne le manipulateur. Solution économique, demande un peu de bricolage/programmation (Arduino IDE).
+Acheter une interface toute prête : des interfaces manipulateur ↔ USB/clavier existent déjà assemblées et prêtes à l'emploi dans le commerce radioamateur, pour ceux qui préfèrent une solution clé en main sans montage.
 Auteur
 
 F4GOP
@@ -46,6 +52,12 @@ Start the session
 
 No sign-up or installation required — everything runs locally, right in your browser.
 
+Using a real paddle instead of the keyboard
+
+RX-CW works directly from the keyboard, but to practice with a real paddle, you need an interface that turns the paddle's contacts into input the PC understands. Two options:
+
+Build your own with a Digispark: a very cheap USB board (a few euros) that can be programmed to act as a keyboard (HID) and send keystrokes matching dits/dahs when the paddle is pressed. Budget option, requires a bit of DIY/programming (Arduino IDE).
+Buy a ready-made interface: pre-assembled paddle-to-USB/keyboard interfaces are available from amateur radio retailers for those who prefer a plug-and-play solution.
 Author
 
 F4GOP
